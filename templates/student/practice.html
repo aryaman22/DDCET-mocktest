@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ config.name }} — Practice — DDCET</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+
+<body>
+    <!-- Practice Header -->
+    <div class="practice-header">
+        <div class="practice-title">
+            🎯 Practice Mode · {{ config.name }}
+            {% if topic_drill %}
+            <span class="badge badge-practice">🏷 Topic Drill: {{ topic_drill }}</span>
+            {% endif %}
+        </div>
+        <div class="practice-stats">
+            <span id="q-counter" class="mono">Q 1 / {{ practice.questions_seen|length if practice.questions_seen != '[]'
+                else 0 }}</span>
+            <span id="accuracy-display" class="accuracy">Accuracy: 0% (0/0)</span>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar-practice">
+        <div class="progress-bar-fill" id="progress-fill" style="width: 0%;"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+        <div id="practice-container">
+            <!-- Rendered by practice.js -->
+        </div>
+
+        <div style="text-align: center; margin-top: 24px;">
+            <button class="btn btn-danger" onclick="finishPractice()">🏁 Finish Practice</button>
+            <a href="{{ url_for('student.home') }}" class="btn btn-outline" style="margin-left: 10px;">🏠 Home</a>
+        </div>
+    </div>
+
+    <script>
+        window.SESSION_ID = {{ practice.id }};
+        window.PRACTICE_QUESTIONS = {{ questions_json | safe }};
+    </script>
+    <script src="{{ url_for('static', filename='js/practice.js') }}"></script>
+</body>
+
+</html>

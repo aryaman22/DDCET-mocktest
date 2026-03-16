@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Attempts — DDCET Admin{% endblock %}
+{% block content %}
+<div class="main-content">
+    <div class="d-flex justify-between align-center" style="margin-bottom: 24px;">
+        <h1>📋 Exam Attempts</h1>
+        <a href="{{ url_for('admin.export_attempts') }}" class="btn btn-outline">📥 Export CSV</a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="margin-bottom: 20px; padding: 16px;">
+        <form method="GET" action="{{ url_for('admin.attempts') }}" class="form-inline">
+            <div class="form-group" style="margin-bottom: 0;">
+                <select name="config_id" class="form-control" style="width: auto;">
+                    <option value="">All Configs</option>
+                    {% for c in configs %}
+                    <option value="{{ c.id }}" {{ 'selected' if config_filter==c.id|string }}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <select name="mode" class="form-control" style="width: auto;">
+                    <option value="">All Modes</option>
+                    <option value="exam" {{ 'selected' if mode_filter=='exam' }}>Exam</option>
+                    <option value="practice" {{ 'selected' if mode_filter=='practice' }}>Practice</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <input type="text" name="student" class="form-control" placeholder="Student name..."
+                    value="{{ student_filter }}" style="width: 180px;">
+            </div>
+            <button type="submit" class="btn btn-outline btn-sm">🔍 Filter</button>
+        </form>
+    </div>
+
+    {% if attempts %}
+    <table class="table-dark">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Config</th>
+                <th>Mode</th>
+                <th>Date</th>
+                <th>Score</th>
+                <th>%</th>
+                <th>Time</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in attempts %}
+            <tr class="clickable-row"
+                onclick="window.location='{{ url_for('admin.attempt_detail', attempt_id=a.id) }}'">
+                <td>{{ a.user.name if a.user else 'N/A' }}</td>
+                <td>{{ a.config.name if a.config else 'N/A' }}</td>
+                <td>
+                    <span class="badge {{ 'badge-exam' if a.mode == 'exam' else 'badge-practice' }}">
+                        {{ '📝' if a.mode == 'exam' else '🎯' }} {{ a.mode|upper }}
+                    </span>
+                </td>
+                <td class="mono" style="font-size:.8rem;">{{ a.started_at.strftime('%Y-%m-%d %H:%M') if a.started_at
+                    else '' }}</td>
+                <td class="mono">{{ a.score }}/{{ a.max_score }}</td>
+                <td class="mono {{ 'text-green' if a.percentage >= 50 else 'text-red' }}">{{ a.percentage }}%</td>
+                <td class="mono" style="font-size:.8rem;">
+                    {% if a.time_taken_sec %}{{ (a.time_taken_sec // 60) }}m {{ a.time_taken_sec % 60 }}s{% else %}—{%
+                    endif %}
+                </td>
+                <td>
+                    <span
+                        class="badge {{ 'badge-success' if a.status == 'submitted' else 'badge-warning' if a.status == 'in_progress' else 'badge-muted' }}">
+                        {{ a.status }}
+                    </span>
+                    {% if a.fs_exit_count > 0 or a.tab_switch_count > 0 %}
+                    <span class="violation-badge">🚨 {{ a.fs_exit_count + a.tab_switch_count }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if pagination.pages > 1 %}
+    <div class="pagination">
+        {% if pagination.has_prev %}
+        <a
+            href="{{ url_for('admin.attempts', page=pagination.prev_num, config_id=config_filter, mode=mode_filter, student=student_filter) }}">←
+            Prev</a>
+        {% endif %}
+        {% for p in pagination.iter_pages() %}
+        {% if p %}
+        {% if p == pagination.page %}
+        <span class="current">{{ p }}</span>
+        {% else %}
+        <a
+            href="{{ url_for('admin.attempts', page=p, config_id=config_filter, mode=mode_filter, student=student_filter) }}">{{
+            p }}</a>
+        {% endif %}
+        {% else %}
+        <span class="disabled">…</span>
+        {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+        <a
+            href="{{ url_for('admin.attempts', page=pagination.next_num, config_id=config_filter, mode=mode_filter, student=student_filter) }}">Next
+            →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <h3>No attempts found</h3>
+        <p>No exam attempts match your filters.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

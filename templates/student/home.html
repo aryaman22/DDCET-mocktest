@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Student Home — DDCET{% endblock %}
+{% block content %}
+<div class="main-content">
+    <h1 style="margin-bottom: 30px;">Welcome, {{ current_user.name }} 👋</h1>
+
+    {% if not exam_data and not practice_data %}
+    <div class="empty-state">
+        <div class="empty-icon">📚</div>
+        <h3>No exams or practice sets are available yet</h3>
+        <p>Check back later! Your admin hasn't set up any tests yet.</p>
+    </div>
+    {% endif %}
+
+    <!-- ═══ SECTION A: Mock Exams ═══ -->
+    {% if exam_data %}
+    <div class="home-section section-exam">
+        <div class="home-section-header">
+            <h2>📝 Mock Exams</h2>
+            <span class="badge badge-exam">{{ exam_data|length }} available</span>
+        </div>
+        <div class="config-cards">
+            {% for item in exam_data %}
+            <div class="config-card">
+                <h3>{{ item.config.name }}</h3>
+                <div class="config-meta">
+                    <span>📝 {{ item.config.total_questions }} questions</span>
+                    <span>⏱ {{ item.config.duration_minutes }} min</span>
+                    <span>📊 +{{ item.config.marks_correct }}/−{{ item.config.marks_wrong }}</span>
+                </div>
+                <p class="text-muted" style="font-size:.85rem; margin-bottom: 12px;">📚 {{ item.bank_names }}</p>
+                <div class="config-footer">
+                    {% if item.status == 'completed' %}
+                    <a href="{{ url_for('student.result', attempt_id=item.attempt_id) }}"
+                        class="btn btn-success btn-sm">✓ Completed — View Result</a>
+                    {% elif item.status == 'in_progress' %}
+                    <a href="{{ url_for('student.start_exam', config_id=item.config.id) }}"
+                        class="btn btn-warning btn-sm">▶ Resume Exam</a>
+                    {% else %}
+                    <a href="{{ url_for('student.exam_instructions', config_id=item.config.id) }}"
+                        class="btn btn-primary btn-sm">▶ Start Exam</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ═══ SECTION B: Practice Sets ═══ -->
+    {% if practice_data %}
+    <div class="home-section section-practice">
+        <div class="home-section-header">
+            <h2>🎯 Practice Sets</h2>
+            <span class="badge badge-practice">{{ practice_data|length }} available</span>
+        </div>
+        <div class="config-cards">
+            {% for item in practice_data %}
+            <div class="config-card">
+                <h3>{{ item.config.name }}</h3>
+                <div class="config-meta">
+                    <span>📝 {{ item.config.total_questions }} questions</span>
+                    <span>⏱ Unlimited</span>
+                    {% if item.topics %}
+                    <span>🏷 {{ item.topics[:3]|join(', ') }}{% if item.topics|length > 3 %} +{{ item.topics|length - 3
+                        }}{% endif %}</span>
+                    {% endif %}
+                </div>
+                <p class="text-muted" style="font-size:.85rem; margin-bottom: 12px;">📚 {{ item.bank_names }}</p>
+                {% if item.total_answered > 0 %}
+                <div class="info-box info-box-green" style="font-size: .8rem;">
+                    Lifetime Accuracy: {{ item.accuracy }}% ({{ item.total_correct }}/{{ item.total_answered }})
+                </div>
+                {% endif %}
+                <div class="config-footer">
+                    <form action="{{ url_for('student.start_practice', config_id=item.config.id) }}" method="POST"
+                        style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+                        <button type="submit" class="btn btn-success btn-sm">▶ Start Practice</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ═══ SECTION C: History ═══ -->
+    {% if history %}
+    <div class="home-section">
+        <div class="home-section-header">
+            <h2>📊 My History</h2>
+        </div>
+        <table class="table-dark">
+            <thead>
+                <tr>
+                    <th>Exam</th>
+                    <th>Date</th>
+                    <th>Score</th>
+                    <th>%</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in history %}
+                <tr>
+                    <td>{{ a.config.name if a.config else 'N/A' }}</td>
+                    <td class="mono" style="font-size:.8rem;">{{ a.started_at.strftime('%Y-%m-%d %H:%M') if a.started_at
+                        else '' }}</td>
+                    <td class="mono">{{ a.score }}/{{ a.max_score }}</td>
+                    <td class="mono {{ 'text-green' if a.percentage >= 50 else 'text-red' }}">{{ a.percentage }}%</td>
+                    <td>
+                        <span class="badge {{ 'badge-success' if a.status == 'submitted' else 'badge-warning' }}">{{
+                            a.status }}</span>
+                    </td>
+                    <td>
+                        {% if a.status in ['submitted', 'timeout'] %}
+                        <a href="{{ url_for('student.result', attempt_id=a.id) }}" class="btn btn-outline btn-sm">View
+                            Result</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

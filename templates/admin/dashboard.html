@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — DDCET{% endblock %}
+{% block content %}
+<div class="main-content">
+    <h1 style="margin-bottom: 24px;">📊 Admin Dashboard</h1>
+
+    {% if total_questions == 0 %}
+    <div class="info-box info-box-yellow" style="margin-bottom: 24px;">
+        ⚠ No questions in database yet. Upload questions to get started.
+        <a href="{{ url_for('admin.banks') }}" class="btn btn-primary btn-sm" style="margin-left: auto;">+ Upload
+            Questions Now →</a>
+    </div>
+    {% endif %}
+
+    <div class="card-grid">
+        <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-value mono">{{ total_questions }}</div>
+            <div class="stat-label">Total Questions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📚</div>
+            <div class="stat-value mono">{{ active_banks }}</div>
+            <div class="stat-label">Active Banks</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-value mono">{{ active_exam_configs }}</div>
+            <div class="stat-label">Active Exam Configs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-value mono">{{ active_practice_configs }}</div>
+            <div class="stat-label">Active Practice Configs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-value mono">{{ total_students }}</div>
+            <div class="stat-label">Total Students</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-value mono">{{ attempts_today }}</div>
+            <div class="stat-label">Attempts Today</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value mono">{{ pass_rate }}%</div>
+            <div class="stat-label">Pass Rate (≥50%)</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 16px;">📋 Recent Attempts</h3>
+        {% if last_attempts %}
+        <table class="table-dark">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Config</th>
+                    <th>Mode</th>
+                    <th>Date</th>
+                    <th>Score</th>
+                    <th>%</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in last_attempts %}
+                <tr class="clickable-row"
+                    onclick="window.location='{{ url_for('admin.attempt_detail', attempt_id=a.id) }}'">
+                    <td>{{ a.user.name if a.user else 'N/A' }}</td>
+                    <td>{{ a.config.name if a.config else 'N/A' }}</td>
+                    <td>
+                        <span class="badge {{ 'badge-exam' if a.mode == 'exam' else 'badge-practice' }}">
+                            {{ '📝' if a.mode == 'exam' else '🎯' }} {{ a.mode|upper }}
+                        </span>
+                    </td>
+                    <td class="mono" style="font-size:.8rem;">{{ a.started_at.strftime('%Y-%m-%d %H:%M') if a.started_at
+                        else '' }}</td>
+                    <td class="mono">{{ a.score }}/{{ a.max_score }}</td>
+                    <td class="mono">{{ a.percentage }}%</td>
+                    <td>
+                        <span
+                            class="badge {{ 'badge-success' if a.status == 'submitted' else 'badge-warning' if a.status == 'in_progress' else 'badge-danger' }}">
+                            {{ a.status }}
+                        </span>
+                        {% if a.fs_exit_count > 0 or a.tab_switch_count > 0 %}
+                        <span class="violation-badge">🚨</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <p>No attempts yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

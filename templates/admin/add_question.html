@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Add Question — {{ bank.name }} — DDCET Admin{% endblock %}
+{% block content %}
+<div class="main-content">
+    <h1 style="margin-bottom: 24px;">➕ Add Question to "{{ bank.name }}"</h1>
+
+    <div class="card" style="max-width: 700px;">
+        <form method="POST" action="{{ url_for('admin.add_question', bank_id=bank.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="qno">Question Number</label>
+                    <input type="number" name="qno" id="qno" class="form-control" placeholder="e.g. 1">
+                </div>
+                <div class="form-group">
+                    <label for="section">Section</label>
+                    <select name="section" id="section" class="form-control">
+                        <option value="1">Section 1</option>
+                        <option value="2">Section 2</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="topic">Topic</label>
+                <input type="text" name="topic" id="topic" class="form-control" placeholder="e.g. Classical Mechanics">
+            </div>
+
+            <div class="form-group">
+                <label for="question">Question Text *</label>
+                <textarea name="question" id="question" class="form-control" rows="3" required
+                    placeholder="Enter the question text..."></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="option_a">Option A *</label>
+                    <input type="text" name="option_a" id="option_a" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="option_b">Option B *</label>
+                    <input type="text" name="option_b" id="option_b" class="form-control" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="option_c">Option C *</label>
+                    <input type="text" name="option_c" id="option_c" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="option_d">Option D *</label>
+                    <input type="text" name="option_d" id="option_d" class="form-control" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="correct_ans">Correct Answer *</label>
+                <select name="correct_ans" id="correct_ans" class="form-control" style="width: 200px;">
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                    <option value="X">X (Bonus — everyone gets marks)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="explanation">Explanation (optional)</label>
+                <textarea name="explanation" id="explanation" class="form-control" rows="2"
+                    placeholder="Explain the answer..."></textarea>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">✅ Add Question</button>
+                <a href="{{ url_for('admin.bank_questions', bank_id=bank.id) }}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Upload Questions — {{ bank.name }} — DDCET Admin{% endblock %}
+{% block content %}
+<div class="main-content">
+    <h1 style="margin-bottom: 24px;">📤 Upload Questions to "{{ bank.name }}"</h1>
+
+    <div class="card" style="max-width: 600px;">
+        <form method="POST" action="{{ url_for('admin.upload_questions', bank_id=bank.id) }}"
+            enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+
+            <div class="info-box info-box-blue" style="margin-bottom: 20px;">
+                ℹ️ Upload a CSV, JSON, or Excel (.xlsx) file containing your questions. Max file size: 5MB.
+            </div>
+
+            <div class="form-group">
+                <label for="file">Select File (CSV, JSON, or Excel)</label>
+                <input type="file" name="file" id="file" class="form-control" accept=".csv,.json,.xlsx" required>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">📤 Upload & Import</button>
+                <a href="{{ url_for('admin.sample_csv') }}" class="btn btn-outline">📥 Download Sample CSV</a>
+                <a href="{{ url_for('admin.bank_questions', bank_id=bank.id) }}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card mt-3" style="max-width: 600px;">
+        <h3 style="margin-bottom: 12px;">📋 Expected Format</h3>
+        <p class="text-muted" style="margin-bottom: 12px;">CSV / Excel columns (case-insensitive):</p>
+        <code
+            style="display: block; background: var(--surface2); padding: 12px; border-radius: var(--radius); font-size: .8rem; color: var(--accent2);">
+            qno, section, topic, question, option_a, option_b, option_c, option_d, correct_ans, explanation
+        </code>
+        <p class="text-muted mt-2" style="font-size: .85rem;">
+            • <strong>correct_ans</strong>: A, B, C, D, or X (bonus)<br>
+            • <strong>section</strong>: 1 or 2 (defaults to 1)<br>
+            • <strong>topic</strong>: defaults to "General" if empty<br>
+            • <strong>explanation</strong>: optional<br>
+            • <strong>Excel</strong>: First row must be headers (same column names as above)
+        </p>
+    </div>
+</div>
+{% endblock %}

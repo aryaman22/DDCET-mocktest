@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Practice Sessions — DDCET Admin{% endblock %}
+{% block content %}
+<div class="main-content">
+    <h1 style="margin-bottom: 24px;">🎯 Practice Sessions</h1>
+
+    {% if sessions %}
+    <table class="table-dark">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Config</th>
+                <th>Started</th>
+                <th>Answered</th>
+                <th>Correct</th>
+                <th>Accuracy</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in sessions %}
+            <tr>
+                <td>{{ s.user.name if s.user else 'N/A' }}</td>
+                <td>{{ s.config.name if s.config else 'N/A' }}</td>
+                <td class="mono" style="font-size:.8rem;">{{ s.started_at.strftime('%Y-%m-%d %H:%M') if s.started_at
+                    else '' }}</td>
+                <td class="mono">{{ s.total_answered }}</td>
+                <td class="mono text-green">{{ s.total_correct }}</td>
+                <td class="mono">
+                    {% if s.total_answered > 0 %}
+                    {{ ((s.total_correct / s.total_answered) * 100) | round(1) }}%
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                <td>
+                    <span
+                        class="badge {{ 'badge-success' if s.status == 'completed' else 'badge-warning' if s.status == 'active' else 'badge-muted' }}">
+                        {{ s.status }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🎯</div>
+        <h3>No practice sessions yet</h3>
+        <p>Practice sessions will appear here when students use practice mode.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

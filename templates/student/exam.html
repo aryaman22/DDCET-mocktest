@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ config.name }} — Exam — DDCET</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+
+<body>
+    {% block nav %}
+    <div class="exam-nav">
+        <span class="exam-title">🎓 DDCET Exam Portal · {{ config.name }}</span>
+        <div class="d-flex align-center gap-2">
+            <span class="exam-live">LIVE</span>
+            <span id="nav-progress" class="mono" style="color:var(--muted);font-size:.85rem;">Q1/{{
+                attempt.questions_json|length }}</span>
+        </div>
+    </div>
+    {% endblock %}
+
+    <div class="exam-container">
+        <!-- Left Panel: Question -->
+        <div class="exam-question-panel" id="question-container">
+            <!-- Rendered by exam.js -->
+        </div>
+
+        <!-- Right Panel: Timer + Palette -->
+        <div class="exam-sidebar">
+            <!-- Timer -->
+            <div class="timer-box">
+                <div class="timer-label">⏱ TIME REMAINING</div>
+                <div id="timer-display" class="timer-display">--:--:--</div>
+                <div id="save-status" class="text-muted" style="font-size:.7rem; margin-top:4px;"></div>
+            </div>
+
+            <!-- Section Filter -->
+            <div>
+                <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px;">Filter by Section</div>
+                <div class="section-tabs">
+                    <button class="section-tab active" data-section="all" onclick="filterSection('all')">All</button>
+                    <button class="section-tab" data-section="1" onclick="filterSection('1')">Sec 1</button>
+                    <button class="section-tab" data-section="2" onclick="filterSection('2')">Sec 2</button>
+                </div>
+            </div>
+
+            <!-- Question Palette -->
+            <div>
+                <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px;">Question Palette</div>
+                <div class="palette-grid" id="question-palette">
+                    <!-- Rendered by exam.js -->
+                </div>
+                <div class="palette-legend">
+                    <span><span class="dot dot-answered"></span> Answered</span>
+                    <span><span class="dot dot-marked"></span> Marked</span>
+                    <span><span class="dot dot-unanswered"></span> Unanswered</span>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="exam-stats-grid">
+                <div class="exam-stat">
+                    <div class="num text-green" id="stat-answered">0</div>
+                    <div class="label">Answered</div>
+                </div>
+                <div class="exam-stat">
+                    <div class="num text-muted" id="stat-unanswered">0</div>
+                    <div class="label">Unanswered</div>
+                </div>
+                <div class="exam-stat">
+                    <div class="num text-yellow" id="stat-marked">0</div>
+                    <div class="label">Marked</div>
+                </div>
+                <div class="exam-stat">
+                    <div class="num text-blue" id="stat-total">0</div>
+                    <div class="label">Total</div>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <button class="btn btn-danger w-100" onclick="showSubmitModal()">
+                🔴 Submit Exam
+            </button>
+        </div>
+    </div>
+
+    <script>
+        window.ATTEMPT_ID = {{ attempt.id }};
+        window.DURATION_SECONDS = {{ duration_seconds }};
+        window.EXAM_QUESTIONS = {{ questions_json | safe }};
+        window.SAVED_ANSWERS = {{ saved_answers | safe }};
+    </script>
+    <script src="{{ url_for('static', filename='js/exam.js') }}"></script>
+</body>
+
+</html>

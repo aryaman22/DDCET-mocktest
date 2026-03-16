@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Exam Instructions — {{ config.name }} — DDCET{% endblock %}
+{% block content %}
+<div class="instructions-wrapper">
+    <div class="instructions-card">
+        <h1>📝 {{ config.name }}</h1>
+
+        <div class="exam-meta-grid">
+            <div class="exam-meta-item">
+                <div class="meta-value">{{ config.total_questions }}</div>
+                <div class="meta-label">Questions</div>
+            </div>
+            <div class="exam-meta-item">
+                <div class="meta-value">{{ config.duration_minutes }} min</div>
+                <div class="meta-label">Duration</div>
+            </div>
+            <div class="exam-meta-item">
+                <div class="meta-value">+{{ config.marks_correct }}</div>
+                <div class="meta-label">Per Correct</div>
+            </div>
+            <div class="exam-meta-item">
+                <div class="meta-value">−{{ config.marks_wrong }}</div>
+                <div class="meta-label">Per Wrong</div>
+            </div>
+            <div class="exam-meta-item">
+                <div class="meta-value">{{ config.total_questions * config.marks_correct }}</div>
+                <div class="meta-label">Max Marks</div>
+            </div>
+        </div>
+
+        <h3 style="margin: 24px 0 12px;">📋 Exam Rules</h3>
+        <ul class="rule-list">
+            <li><span class="rule-icon">🖥</span> This exam requires <strong>fullscreen mode</strong>. Exiting
+                fullscreen is logged.</li>
+            <li><span class="rule-icon">🚫</span> <strong>Tab switching</strong> is detected and recorded.</li>
+            <li><span class="rule-icon">⏱</span> The timer starts after entering fullscreen and cannot be paused.</li>
+            <li><span class="rule-icon">📊</span> Marking: <strong>+{{ config.marks_correct }}</strong> for correct,
+                <strong>−{{ config.marks_wrong }}</strong> for wrong, <strong>0</strong> for unanswered.</li>
+            <li><span class="rule-icon">🔄</span> Your answers are auto-saved every 30 seconds.</li>
+            <li><span class="rule-icon">⏰</span> The exam auto-submits when time runs out.</li>
+            <li><span class="rule-icon">🔒</span> Right-click and developer tools are disabled during the exam.</li>
+        </ul>
+
+        <div class="info-box info-box-yellow" style="margin-top: 20px;">
+            ⚠️ Make sure you have a stable internet connection before starting.
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{{ url_for('student.start_exam', config_id=config.id) }}" class="btn btn-primary btn-lg">
+                🖥 Start Exam — Enter Fullscreen
+            </a>
+        </div>
+
+        <div style="text-align: center; margin-top: 12px;">
+            <a href="{{ url_for('student.home') }}" class="btn btn-outline btn-sm">← Back to Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'create' %}Create Bank{% else %}{{ bank.name }}{% endif %} — DDCET Admin{% endblock %}
+{% block content %}
+<div class="main-content">
+    {% if mode == 'create' %}
+    <h1 style="margin-bottom: 24px;">📚 Create Question Bank</h1>
+    <div class="card" style="max-width: 600px;">
+        <form method="POST" action="{{ url_for('admin.create_bank') }}">
+            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+            <div class="form-group">
+                <label for="name">Bank Name *</label>
+                <input type="text" name="name" id="name" class="form-control" placeholder="e.g. DDCET 2025 Physics"
+                    required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea name="description" id="description" class="form-control"
+                    placeholder="Optional description"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="year">Year</label>
+                    <input type="number" name="year" id="year" class="form-control" placeholder="e.g. 2025">
+                </div>
+                <div class="form-group">
+                    <label for="section">Section</label>
+                    <select name="section" id="section" class="form-control">
+                        <option value="0">All Sections (Mixed)</option>
+                        <option value="1">Section 1 Only</option>
+                        <option value="2">Section 2 Only</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-check">
+                <input type="checkbox" name="is_active" id="is_active" checked>
+                <label for="is_active">Active (available for exams & practice)</label>
+            </div>
+            <div class="btn-group mt-2">
+                <button type="submit" class="btn btn-primary">✅ Create Bank</button>
+                <a href="{{ url_for('admin.banks') }}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    {% elif mode == 'questions' %}
+    <div class="d-flex justify-between align-center" style="margin-bottom: 16px;">
+        <div>
+            <h1>{{ bank.name }}</h1>
+            <p class="text-muted">{{ bank.description or '' }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('admin.add_question', bank_id=bank.id) }}" class="btn btn-primary btn-sm">+ Add
+                Question</a>
+            <a href="{{ url_for('admin.upload_questions', bank_id=bank.id) }}" class="btn btn-outline btn-sm">📤
+                Upload</a>
+            <a href="{{ url_for('admin.banks') }}" class="btn btn-outline btn-sm">← Back</a>
+        </div>
+    </div>
+
+    <!-- Stats Card -->
+    <div class="card-grid" style="margin-bottom: 20px;">
+        <div class="stat-card">
+            <div class="stat-value mono">{{ total }}</div>
+            <div class="stat-label">Total Questions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value mono">{{ sec1 }}</div>
+            <div class="stat-label">Section 1</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value mono">{{ sec2 }}</div>
+            <div class="stat-label">Section 2</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value mono">{{ unique_topics }}</div>
+            <div class="stat-label">Unique Topics</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="margin-bottom: 20px; padding: 16px;">
+        <form method="GET" action="{{ url_for('admin.bank_questions', bank_id=bank.id) }}" class="form-inline">
+            <div class="form-group" style="margin-bottom: 0;">
+                <select name="section" class="form-control" style="width: auto;">
+                    <option value="">All Sections</option>
+                    <option value="1" {{ 'selected' if section_f=='1' }}>Section 1</option>
+                    <option value="2" {{ 'selected' if section_f=='2' }}>Section 2</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <select name="topic" class="form-control" style="width: auto;">
+                    <option value="">All Topics</option>
+                    {% for t in topics %}
+                    <option value="{{ t }}" {{ 'selected' if topic_f==t }}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <input type="text" name="q" class="form-control" placeholder="Search questions..."
+                    value="{{ search_q }}" style="width: 200px;">
+            </div>
+            <button type="submit" class="btn btn-outline btn-sm">🔍 Filter</button>
+        </form>
+    </div>
+
+    <!-- Questions Table -->
+    <form method="POST" action="{{ url_for('admin.bulk_delete_questions') }}" id="bulk-form">
+        <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+        <input type="hidden" name="bank_id" value="{{ bank.id }}">
+
+        {% if questions %}
+        <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="form-check">
+                <input type="checkbox" id="select-all-questions">
+                <label for="select-all-questions" class="text-muted" style="font-size: .85rem;">Select All</label>
+            </div>
+            <button type="submit" class="btn btn-danger btn-sm"
+                onclick="return confirm('Delete selected questions?')">🗑 Delete Selected</button>
+        </div>
+
+        <table class="table-dark">
+            <thead>
+                <tr>
+                    <th style="width:30px;"></th>
+                    <th>Q#</th>
+                    <th>Section</th>
+                    <th>Topic</th>
+                    <th>Question</th>
+                    <th>Answer</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for q in questions %}
+                <tr data-q-id="{{ q.id }}"
+                    data-q-json='{{ {"qno": q.qno, "section": q.section, "topic": q.topic, "question": q.question, "option_a": q.option_a, "option_b": q.option_b, "option_c": q.option_c, "option_d": q.option_d, "correct_ans": q.correct_ans, "explanation": q.explanation or ""}|tojson }}'
+                    style="cursor:pointer;" onclick="showQuestionPreview('{{ q.id }}')">
+                    <td onclick="event.stopPropagation();">
+                        <input type="checkbox" name="question_ids" value="{{ q.id }}" class="question-checkbox">
+                    </td>
+                    <td class="mono">{{ q.qno }}</td>
+                    <td><span class="badge badge-muted">S{{ q.section }}</span></td>
+                    <td>{{ q.topic }}</td>
+                    <td>{{ q.question[:60] }}{% if q.question|length > 60 %}...{% endif %}</td>
+                    <td><span class="badge {{ 'badge-warning' if q.correct_ans == 'X' else 'badge-success' }}">{{
+                            q.correct_ans }}</span></td>
+                    <td onclick="event.stopPropagation();">
+                        <div class="btn-group">
+                            <a href="{{ url_for('admin.edit_question', q_id=q.id) }}"
+                                class="btn btn-outline btn-sm">✏️</a>
+                            <form action="{{ url_for('admin.delete_question', q_id=q.id) }}" method="POST"
+                                style="display:inline;" class="delete-form">
+                                <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+                                <button type="submit" class="btn btn-danger btn-sm">🗑</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if pagination.pages > 1 %}
+        <div class="pagination">
+            {% if pagination.has_prev %}
+            <a
+                href="{{ url_for('admin.bank_questions', bank_id=bank.id, page=pagination.prev_num, section=section_f, topic=topic_f, q=search_q) }}">←
+                Prev</a>
+            {% endif %}
+            {% for p in pagination.iter_pages() %}
+            {% if p %}
+            {% if p == pagination.page %}
+            <span class="current">{{ p }}</span>
+            {% else %}
+            <a
+                href="{{ url_for('admin.bank_questions', bank_id=bank.id, page=p, section=section_f, topic=topic_f, q=search_q) }}">{{
+                p }}</a>
+            {% endif %}
+            {% else %}
+            <span class="disabled">…</span>
+            {% endif %}
+            {% endfor %}
+            {% if pagination.has_next %}
+            <a
+                href="{{ url_for('admin.bank_questions', bank_id=bank.id, page=pagination.next_num, section=section_f, topic=topic_f, q=search_q) }}">Next
+                →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📝</div>
+            <h3>No questions found</h3>
+            <p>Add questions manually or upload a CSV/JSON file.</p>
+            <div class="btn-group" style="justify-content: center;">
+                <a href="{{ url_for('admin.add_question', bank_id=bank.id) }}" class="btn btn-primary">+ Add
+                    Question</a>
+                <a href="{{ url_for('admin.upload_questions', bank_id=bank.id) }}" class="btn btn-outline">📤 Upload</a>
+            </div>
+        </div>
+        {% endif %}
+    </form>
+    {% endif %}
+</div>
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

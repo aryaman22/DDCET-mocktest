@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Attempt Detail — DDCET Admin{% endblock %}
+{% block content %}
+<div class="main-content">
+    <div class="d-flex justify-between align-center" style="margin-bottom: 24px;">
+        <h1>📋 Attempt #{{ attempt.id }}</h1>
+        <a href="{{ url_for('admin.attempts') }}" class="btn btn-outline">← Back to Attempts</a>
+    </div>
+
+    <!-- Summary -->
+    <div class="card-grid" style="margin-bottom: 20px;">
+        <div class="stat-card">
+            <div class="stat-value mono">{{ attempt.score }}/{{ attempt.max_score }}</div>
+            <div class="stat-label">Score</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value mono {{ 'text-green' if attempt.percentage >= 50 else 'text-red' }}">{{
+                attempt.percentage }}%</div>
+            <div class="stat-label">Percentage</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value mono text-green">{{ attempt.correct_count }}</div>
+            <div class="stat-label">Correct</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value mono text-red">{{ attempt.wrong_count }}</div>
+            <div class="stat-label">Wrong</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value mono text-muted">{{ attempt.unattempted }}</div>
+            <div class="stat-label">Unattempted</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value mono text-yellow">{{ attempt.bonus_count }}</div>
+            <div class="stat-label">Bonus</div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 20px;">
+        <table class="table-dark">
+            <tr>
+                <td class="text-muted" style="width:150px;">Student</td>
+                <td>{{ attempt.user.name if attempt.user else 'N/A' }} ({{ attempt.user.email if attempt.user else ''
+                    }})</td>
+            </tr>
+            <tr>
+                <td class="text-muted">Config</td>
+                <td>{{ attempt.config.name if attempt.config else 'N/A' }}</td>
+            </tr>
+            <tr>
+                <td class="text-muted">Mode</td>
+                <td><span class="badge {{ 'badge-exam' if attempt.mode == 'exam' else 'badge-practice' }}">{{
+                        attempt.mode|upper }}</span></td>
+            </tr>
+            <tr>
+                <td class="text-muted">Status</td>
+                <td><span class="badge {{ 'badge-success' if attempt.status == 'submitted' else 'badge-warning' }}">{{
+                        attempt.status }}</span></td>
+            </tr>
+            <tr>
+                <td class="text-muted">Started</td>
+                <td class="mono">{{ attempt.started_at.strftime('%Y-%m-%d %H:%M:%S') if attempt.started_at else '—' }}
+                </td>
+            </tr>
+            <tr>
+                <td class="text-muted">Submitted</td>
+                <td class="mono">{{ attempt.submitted_at.strftime('%Y-%m-%d %H:%M:%S') if attempt.submitted_at else '—'
+                    }}</td>
+            </tr>
+            <tr>
+                <td class="text-muted">Time Taken</td>
+                <td class="mono">{{ (attempt.time_taken_sec // 60) }}m {{ attempt.time_taken_sec % 60 }}s</td>
+            </tr>
+        </table>
+    </div>
+
+    {% if attempt.mode == 'exam' and (attempt.fs_exit_count > 0 or attempt.tab_switch_count > 0) %}
+    <div class="info-box info-box-red" style="margin-bottom: 20px;">
+        🚨 <strong>Violations detected:</strong>
+        Fullscreen exits: {{ attempt.fs_exit_count }} |
+        Tab switches: {{ attempt.tab_switch_count }}
+    </div>
+    {% endif %}
+
+    {% if attempt.config and attempt.config.allow_reattempt %}
+    <form action="{{ url_for('admin.reset_attempt', attempt_id=attempt.id) }}" method="POST"
+        style="margin-bottom: 20px;">
+        <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+        <button type="submit" class="btn btn-warning btn-sm"
+            onclick="return confirm('Reset this attempt to allow re-attempt?')">🔄 Reset Attempt</button>
+    </form>
+    {% endif %}
+
+    <!-- Questions Review -->
+    <h2 style="margin: 24px 0 16px;">📝 Questions Review</h2>
+    {% for q in questions %}
+    <div
+        class="review-item {{ 'correct-review' if q.given_answer and q.given_answer == q.correct_ans else 'wrong-review' if q.given_answer and q.given_answer != q.correct_ans and q.correct_ans != 'X' else 'unanswered-review' }}">
+        <div class="review-header">
+            <div>
+                <span class="question-number">Q{{ loop.index }}</span>
+                <span class="badge badge-muted">S{{ q.section }}</span>
+                <span class="badge badge-muted">{{ q.topic }}</span>
+            </div>
+            <div>
+                {% if q.correct_ans == 'X' %}
+                <span class="badge badge-warning">Bonus</span>
+                {% elif q.given_answer == q.correct_ans %}
+                <span class="badge badge-success">✅ +{{ q.marks }}</span>
+                {% elif q.given_answer %}
+                <span class="badge badge-danger">❌ {{ q.marks }}</span>
+                {% else %}
+                <span class="badge badge-muted">— Skipped</span>
+                {% endif %}
+            </div>
+        </div>
+        <p style="margin: 8px 0;">{{ q.question }}</p>
+        <div class="review-options">
+            {% for opt in ['A', 'B', 'C', 'D'] %}
+            <div
+                class="review-option {{ 'correct-opt' if opt == q.correct_ans else 'wrong-opt' if opt == q.given_answer and opt != q.correct_ans else '' }}">
+                <strong>{{ opt }}:</strong> {{ q['option_' + opt|lower] }}
+                {% if opt == q.correct_ans %} ✅{% endif %}
+                {% if opt == q.given_answer and opt != q.correct_ans %} ❌ (Student){% endif %}
+                {% if opt == q.given_answer and opt == q.correct_ans %} (Student){% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% if q.explanation %}
+        <div class="review-explanation">💡 {{ q.explanation }}</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

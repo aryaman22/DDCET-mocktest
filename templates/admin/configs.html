@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Configurations — DDCET Admin{% endblock %}
+{% block content %}
+<div class="main-content">
+    <div class="d-flex justify-between align-center" style="margin-bottom: 24px;">
+        <h1>⚙️ Exam & Practice Configs</h1>
+        <a href="{{ url_for('admin.create_config') }}" class="btn btn-primary">+ Create Config</a>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="tab-exam">📝 Exam Configs</button>
+        <button class="tab-btn" data-tab="tab-practice">🎯 Practice Configs</button>
+    </div>
+
+    <div id="tab-exam" class="tab-content active">
+        {% if exam_configs %}
+        <table class="table-dark">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Mode</th>
+                    <th>Banks</th>
+                    <th>Questions</th>
+                    <th>Duration</th>
+                    <th>Marks</th>
+                    <th>Active</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in exam_configs %}
+                <tr>
+                    <td><strong>{{ c.name }}</strong></td>
+                    <td><span class="badge badge-exam">📝 EXAM</span></td>
+                    <td class="mono" style="font-size:.8rem;">{{ c.bank_ids }}</td>
+                    <td class="mono">{{ c.total_questions }}</td>
+                    <td class="mono">{{ c.duration_minutes }} min</td>
+                    <td class="mono" style="font-size:.8rem;">+{{ c.marks_correct }}/−{{ c.marks_wrong }}</td>
+                    <td><span class="badge {{ 'badge-success' if c.is_active else 'badge-danger' }}">{{ '✅' if
+                            c.is_active else '❌' }}</span></td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ url_for('admin.edit_config', config_id=c.id) }}"
+                                class="btn btn-outline btn-sm">✏️</a>
+                            <form action="{{ url_for('admin.delete_config', config_id=c.id) }}" method="POST"
+                                style="display:inline;" class="delete-form">
+                                <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+                                <button type="submit" class="btn btn-danger btn-sm">🗑</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📝</div>
+            <h3>No exam configs yet</h3>
+            <p>Create an exam configuration to allow students to take timed exams.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div id="tab-practice" class="tab-content">
+        {% if practice_configs %}
+        <table class="table-dark">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Mode</th>
+                    <th>Banks</th>
+                    <th>Questions</th>
+                    <th>Duration</th>
+                    <th>Active</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in practice_configs %}
+                <tr>
+                    <td><strong>{{ c.name }}</strong></td>
+                    <td><span class="badge badge-practice">🎯 PRACTICE</span></td>
+                    <td class="mono" style="font-size:.8rem;">{{ c.bank_ids }}</td>
+                    <td class="mono">{{ c.total_questions }}</td>
+                    <td class="text-muted">Unlimited</td>
+                    <td><span class="badge {{ 'badge-success' if c.is_active else 'badge-danger' }}">{{ '✅' if
+                            c.is_active else '❌' }}</span></td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ url_for('admin.edit_config', config_id=c.id) }}"
+                                class="btn btn-outline btn-sm">✏️</a>
+                            <form action="{{ url_for('admin.delete_config', config_id=c.id) }}" method="POST"
+                                style="display:inline;" class="delete-form">
+                                <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+                                <button type="submit" class="btn btn-danger btn-sm">🗑</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">🎯</div>
+            <h3>No practice configs yet</h3>
+            <p>Create a practice configuration to allow students to learn with instant feedback.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'create' %}Create Config{% else %}Edit Config{% endif %} — DDCET Admin{% endblock %}
+{% block content %}
+<div class="main-content">
+    <h1 style="margin-bottom: 24px;">
+        {{ '➕ Create Configuration' if mode == 'create' else '✏️ Edit Configuration' }}
+    </h1>
+
+    <div class="card" style="max-width: 700px;">
+        <form method="POST"
+            action="{{ url_for('admin.create_config') if mode == 'create' else url_for('admin.edit_config', config_id=config.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+
+            <div class="form-group">
+                <label for="name">Configuration Name *</label>
+                <input type="text" name="name" id="name" class="form-control"
+                    value="{{ config.name if config else '' }}" required placeholder="e.g. DDCET 2025 Mock Exam">
+            </div>
+
+            <div class="form-group">
+                <label for="config-mode">Mode *</label>
+                <select name="mode" id="config-mode" class="form-control" style="width: 300px;">
+                    <option value="exam" {{ 'selected' if (config and config.mode=='exam' ) or not config }}>📝 Exam
+                    </option>
+                    <option value="practice" {{ 'selected' if config and config.mode=='practice' }}>🎯 Practice</option>
+                </select>
+            </div>
+
+            <div id="mode-info" class="info-box info-box-yellow" style="display: flex;">
+                ⚠️ Exam mode: Timed, fullscreen-locked, negative marking applies.
+            </div>
+
+            <div class="form-group">
+                <label>Question Banks * (select at least one)</label>
+                <div class="checkbox-grid">
+                    {% for bank in banks %}
+                    <div class="form-check">
+                        <input type="checkbox" name="bank_ids" value="{{ bank.id }}" class="bank-checkbox" {{ 'checked'
+                            if config and bank.id in (selected_bank_ids or []) }}>
+                        <label>{{ bank.name }} ({{ bank.question_count }})</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="total_questions">Total Questions</label>
+                <input type="number" name="total_questions" id="total_questions" class="form-control"
+                    value="{{ config.total_questions if config else 100 }}" min="1" style="width: 200px;">
+            </div>
+
+            <div class="form-group">
+                <label for="section_filter">Section Filter</label>
+                <select name="section_filter" id="section_filter" class="form-control" style="width: 300px;">
+                    <option value="0" {{ 'selected' if not config or config.section_filter==0 }}>All Sections</option>
+                    <option value="1" {{ 'selected' if config and config.section_filter==1 }}>Section 1 Only</option>
+                    <option value="2" {{ 'selected' if config and config.section_filter==2 }}>Section 2 Only</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Topic Filter (optional — leave blank for all topics)</label>
+                <div id="topic-checkboxes" class="checkbox-grid">
+                    <p class="text-muted">Select banks first to see available topics.</p>
+                </div>
+            </div>
+
+            <div id="exam-only-fields">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="duration_minutes">Duration (minutes)</label>
+                        <input type="number" name="duration_minutes" id="duration_minutes" class="form-control"
+                            value="{{ config.duration_minutes if config else 150 }}" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <div class="text-muted" style="font-size: .85rem; padding-top: 10px;">
+                            = {{ ((config.duration_minutes if config else 150) // 60) }}h {{ ((config.duration_minutes
+                            if config else 150) % 60) }}m
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="marks_correct">Marks for Correct Answer</label>
+                        <input type="number" name="marks_correct" id="marks_correct" class="form-control"
+                            value="{{ config.marks_correct if config else 2.0 }}" step="0.5" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="marks_wrong">Negative Marks for Wrong Answer</label>
+                        <input type="number" name="marks_wrong" id="marks_wrong" class="form-control"
+                            value="{{ config.marks_wrong if config else 0.5 }}" step="0.25" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-check">
+                <input type="checkbox" name="allow_reattempt" id="allow-reattempt" {{ 'checked' if config and
+                    config.allow_reattempt }}>
+                <label for="allow-reattempt">Allow Re-attempt</label>
+            </div>
+
+            <div class="form-check">
+                <input type="checkbox" name="is_active" id="is_active" {{ 'checked' if (config and config.is_active) or
+                    not config }}>
+                <label for="is_active">Active (visible to students)</label>
+            </div>
+
+            <div class="btn-group mt-2">
+                <button type="submit" class="btn btn-primary">{{ '✅ Create Config' if mode == 'create' else '💾 Save
+                    Changes' }}</button>
+                <a href="{{ url_for('admin.configs') }}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+    window.SELECTED_TOPICS = {{ (selected_topics if config else[])| tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}
