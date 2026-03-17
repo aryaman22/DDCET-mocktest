@@ -529,26 +529,24 @@ def attempts():
     mode_filter = request.args.get('mode', '', type=str)
     student_filter = request.args.get('student', '', type=str)
 
-    query = TestAttempt.query
+    q = TestAttempt.query
 
     if config_filter and config_filter.isdigit():
-        query = query.filter(TestAttempt.config_id == int(config_filter))
+        q = q.filter_by(config_id=int(config_filter))
     if mode_filter and mode_filter in ['exam', 'practice']:
-        query = query.filter(TestAttempt.mode == mode_filter)
+        q = q.filter_by(mode=mode_filter)
     if student_filter and student_filter.strip():
-        query = query.join(User, TestAttempt.user_id == User.id).filter(
-            User.name.ilike(f'%{student_filter.strip()}%')
-        )
+        q = q.join(User).filter(User.name.ilike(f'%{student_filter.strip()}%'))
 
-    total_count = query.count()
-    pagination = query.order_by(TestAttempt.started_at.desc()).paginate(
+    total_count = q.count()
+    pagination = q.order_by(TestAttempt.started_at.desc()).paginate(
         page=page, per_page=25, error_out=False
     )
-    attempts_list = pagination.items
+    attempt_rows = pagination.items
     configs = ExamConfig.query.order_by(ExamConfig.name).all()
 
     return render_template('admin/attempts.html',
-                           attempts=attempts_list,
+                           attempts=attempt_rows,
                            pagination=pagination,
                            configs=configs,
                            total_count=total_count,
@@ -682,62 +680,87 @@ def deactivate_practice_session(session_id):
 @login_required
 @admin_required
 def analytics():
-    # Total exam attempts
+    # ── Summary stats ──────────────────────────────────
     total_exam_attempts = TestAttempt.query.filter_by(mode='exam').count()
+
     exam_submitted = TestAttempt.query.filter(
         TestAttempt.mode == 'exam',
         TestAttempt.status.in_(['submitted', 'timeout'])
     ).all()
-    avg_exam_score = round(sum(a.percentage for a in exam_submitted) / len(exam_submitted), 1) if exam_submitted else 0
+
+    avg_exam_score = round(
+        sum(a.percentage for a in exam_submitted) / len(exam_submitted), 1
+    ) if exam_submitted else 0
+
     pass_count = sum(1 for a in exam_submitted if a.percentage >= 50)
-    pass_rate = round(pass_count / len(exam_submitted) * 100, 1) if exam_submitted else 0
+    pass_rate  = round(pass_count / len(exam_submitted) * 100, 1) if exam_submitted else 0
 
     total_practice = PracticeSession.query.count()
     practice_completed = PracticeSession.query.filter(PracticeSession.total_answered > 0).all()
     avg_practice_accuracy = round(
-        sum(s.total_correct / s.total_answered * 100 for s in practice_completed if s.total_answered > 0)
+        sum(s.total_correct / s.total_answered * 100
+            for s in practice_completed if s.total_answered > 0)
         / len(practice_completed), 1
     ) if practice_completed else 0
 
-    # Daily exam attempts (last 14 days)
+    # ── Daily chart (last 14 days) ──────────────────────
+    # Use naive UTC datetimes to match SQLite storage
     daily_data = []
     for i in range(13, -1, -1):
-        day = datetime.now(timezone.utc).date() - timedelta(days=i)
-        day_start = datetime(day.year, day.month, day.day, tzinfo=timezone.utc)
-        day_end = day_start + timedelta(days=1)
+        day = datetime.utcnow().date() - timedelta(days=i)
+        day_start = datetime(day.year, day.month, day.day)          # naive
+        day_end   = datetime(day.year, day.month, day.day, 23, 59, 59)
         count = TestAttempt.query.filter(
             TestAttempt.started_at >= day_start,
-            TestAttempt.started_at < day_end,
+            TestAttempt.started_at <= day_end,
             TestAttempt.mode == 'exam'
         ).count()
         daily_data.append({'date': day.strftime('%b %d'), 'count': count})
 
-    # Topic-wise accuracy + hardest questions
-    # BUG FIX: Collect all question IDs first, then do ONE bulk query instead
-    # of calling Question.query.get() for every single question in every attempt (N+1).
-    all_attempts = TestAttempt.query.filter(TestAttempt.status.in_(['submitted', 'timeout'])).all()
+    # ── Topic accuracy + hardest questions ──────────────
+    all_attempts = TestAttempt.query.filter(
+        TestAttempt.status.in_(['submitted', 'timeout'])
+    ).all()
 
+    # Collect all unique question IDs in one pass
     all_q_ids = set()
     for attempt in all_attempts:
-        qdata = json.loads(attempt.questions_json) if attempt.questions_json else []
-        for qd in qdata:
-            if qd.get('q_id'):
-                all_q_ids.add(qd['q_id'])
+        try:
+            qdata = json.loads(attempt.questions_json) if attempt.questions_json else []
+            for qd in qdata:
+                if qd.get('q_id'):
+                    all_q_ids.add(int(qd['q_id']))
+        except (json.JSONDecodeError, TypeError, ValueError):
+            continue
 
-    questions_map = {q.id: q for q in Question.query.filter(Question.id.in_(all_q_ids)).all()}
+    # Single bulk query — guard against empty set
+    if all_q_ids:
+        questions_map = {
+            q.id: q for q in Question.query.filter(Question.id.in_(list(all_q_ids))).all()
+        }
+    else:
+        questions_map = {}
 
     topic_accuracy = {}
-    q_stats = {}
+    q_stats        = {}
 
     for attempt in all_attempts:
-        qdata = json.loads(attempt.questions_json) if attempt.questions_json else []
+        try:
+            qdata = json.loads(attempt.questions_json) if attempt.questions_json else []
+        except (json.JSONDecodeError, TypeError):
+            continue
+
         for qd in qdata:
-            qid = qd.get('q_id')
+            try:
+                qid = int(qd.get('q_id', 0))
+            except (TypeError, ValueError):
+                continue
+
             q = questions_map.get(qid)
             if not q:
                 continue
 
-            given = qd.get('given_answer', '')
+            given = (qd.get('given_answer') or '').upper()
 
             # Topic accuracy
             if q.topic not in topic_accuracy:
@@ -746,7 +769,7 @@ def analytics():
             if given and given == q.correct_ans:
                 topic_accuracy[q.topic]['correct'] += 1
 
-            # Question difficulty stats
+            # Question difficulty
             if qid not in q_stats:
                 q_stats[qid] = {'correct': 0, 'total': 0}
             q_stats[qid]['total'] += 1
@@ -765,22 +788,25 @@ def analytics():
             if q:
                 pct = round(data['correct'] / data['total'] * 100, 1)
                 hardest.append({
-                    'id': qid, 'question': q.question[:80],
-                    'topic': q.topic, 'accuracy': pct, 'attempts': data['total']
+                    'id': qid,
+                    'question': q.question[:80],
+                    'topic': q.topic,
+                    'accuracy': pct,
+                    'attempts': data['total']
                 })
     hardest.sort(key=lambda x: x['accuracy'])
     hardest = hardest[:10]
 
-    # Exam vs Practice ratio
-    exam_count = TestAttempt.query.filter_by(mode='exam').count()
+    # ── Counts for ratio chart ──────────────────────────
+    exam_count     = TestAttempt.query.filter_by(mode='exam').count()
     practice_count = PracticeSession.query.count()
 
-    # Top 10 students
+    # ── Top 10 students ─────────────────────────────────
     top_students = db.session.query(
         User.name, User.email, User.engineering_branch,
         db.func.max(TestAttempt.percentage).label('best_score'),
         db.func.count(TestAttempt.id).label('attempt_count')
-    ).join(TestAttempt).filter(
+    ).join(TestAttempt, User.id == TestAttempt.user_id).filter(
         TestAttempt.mode == 'exam',
         TestAttempt.status.in_(['submitted', 'timeout'])
     ).group_by(User.id).order_by(db.desc('best_score')).limit(10).all()
@@ -797,7 +823,6 @@ def analytics():
                            practice_count=practice_count,
                            top_students=top_students,
                            hardest=hardest)
-
 
 @admin_bp.route('/analytics/export')
 @login_required
