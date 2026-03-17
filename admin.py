@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from models import db, User, QuestionBank, Question, ExamConfig, TestAttempt, PracticeSession, AdminLog
 from utils import parse_csv_questions, parse_json_questions, parse_excel_questions, generate_sample_csv
 from werkzeug.utils import secure_filename
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import os
 import io
@@ -44,7 +44,7 @@ def dashboard():
     active_practice_configs = ExamConfig.query.filter_by(is_active=True, mode='practice').count()
     total_students = User.query.filter_by(role='student').count()
 
-    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     attempts_today = TestAttempt.query.filter(TestAttempt.started_at >= today_start).count()
 
     # Pass rate
@@ -364,16 +364,26 @@ def create_config():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         mode = request.form.get('mode', 'exam')
+        if mode not in ['exam', 'practice']:
+            mode = 'exam'
         bank_ids_list = request.form.getlist('bank_ids')
-        total_questions = int(request.form.get('total_questions', 100))
-        duration_minutes = int(request.form.get('duration_minutes', 150))
-        marks_correct = float(request.form.get('marks_correct', 2.0))
-        marks_wrong = float(request.form.get('marks_wrong', 0.5))
-        section_filter = int(request.form.get('section_filter', 0))
         topic_filter_list = request.form.getlist('topic_filter')
         topic_filter = ','.join(topic_filter_list) if topic_filter_list else ''
         is_active = request.form.get('is_active') == 'on'
         allow_reattempt = request.form.get('allow_reattempt') == 'on'
+
+        # Safe numeric parsing — bare int()/float() raises ValueError on bad input
+        try:
+            total_questions = max(1, int(request.form.get('total_questions', 100)))
+            duration_minutes = max(1, int(request.form.get('duration_minutes', 150)))
+            marks_correct = max(0.0, float(request.form.get('marks_correct', 2.0)))
+            marks_wrong = max(0.0, float(request.form.get('marks_wrong', 0.5)))
+            section_filter = int(request.form.get('section_filter', 0))
+            if section_filter not in [0, 1, 2]:
+                section_filter = 0
+        except (ValueError, TypeError):
+            flash('Invalid number entered. Please check Total Questions, Duration, and Marks fields.', 'error')
+            return redirect(url_for('admin.create_config'))
 
         if not name:
             flash('Config name is required.', 'error')
@@ -417,15 +427,31 @@ def edit_config(config_id):
         config.mode = request.form.get('mode', config.mode)
         bank_ids_list = request.form.getlist('bank_ids')
         config.bank_ids = json.dumps([int(b) for b in bank_ids_list]) if bank_ids_list else config.bank_ids
-        config.total_questions = int(request.form.get('total_questions', config.total_questions))
-        config.duration_minutes = int(request.form.get('duration_minutes', config.duration_minutes)) if config.mode == 'exam' else 0
-        config.marks_correct = float(request.form.get('marks_correct', config.marks_correct)) if config.mode == 'exam' else 0
-        config.marks_wrong = float(request.form.get('marks_wrong', config.marks_wrong)) if config.mode == 'exam' else 0
-        config.section_filter = int(request.form.get('section_filter', config.section_filter))
         topic_filter_list = request.form.getlist('topic_filter')
         config.topic_filter = ','.join(topic_filter_list) if topic_filter_list else ''
         config.is_active = request.form.get('is_active') == 'on'
         config.allow_reattempt = True if config.mode == 'practice' else request.form.get('allow_reattempt') == 'on'
+
+        # Safe numeric parsing
+        try:
+            config.total_questions = max(1, int(request.form.get('total_questions', config.total_questions)))
+            section_filter = int(request.form.get('section_filter', config.section_filter))
+            config.section_filter = section_filter if section_filter in [0, 1, 2] else 0
+            if config.mode == 'exam':
+                config.duration_minutes = max(1, int(request.form.get('duration_minutes', config.duration_minutes)))
+                config.marks_correct = max(0.0, float(request.form.get('marks_correct', config.marks_correct)))
+                config.marks_wrong = max(0.0, float(request.form.get('marks_wrong', config.marks_wrong)))
+            else:
+                config.duration_minutes = 0
+                config.marks_correct = 0
+                config.marks_wrong = 0
+        except (ValueError, TypeError):
+            flash('Invalid number entered. Please check Total Questions, Duration, and Marks fields.', 'error')
+            return redirect(url_for('admin.edit_config', config_id=config_id))
+
+        if not config.name:
+            flash('Config name is required.', 'error')
+            return redirect(url_for('admin.edit_config', config_id=config_id))
 
         db.session.commit()
         log_action('Edited config', f'Config: {config.name} (ID: {config.id})')
@@ -471,6 +497,28 @@ def api_topics():
     return jsonify({'topics': [t[0] for t in topics if t[0]]})
 
 
+# ── Attempts debug ────────────────────────────────────
+@admin_bp.route('/attempts/debug')
+@login_required
+@admin_required
+def attempts_debug():
+    """Temporary debug route - shows raw DB count"""
+    total = TestAttempt.query.count()
+    exam_c = TestAttempt.query.filter_by(mode='exam').count()
+    prac_c = TestAttempt.query.filter_by(mode='practice').count()
+    sample = TestAttempt.query.order_by(TestAttempt.id.desc()).limit(3).all()
+    sample_data = [{'id': a.id, 'mode': a.mode, 'status': a.status,
+                    'user': a.user.name if a.user else '?',
+                    'config': a.config.name if a.config else '?'} for a in sample]
+    from flask import jsonify
+    return jsonify({
+        'total_attempts': total,
+        'exam_attempts': exam_c,
+        'practice_attempts': prac_c,
+        'latest_3': sample_data
+    })
+
+
 # ── Attempts ──────────────────────────────────────────
 @admin_bp.route('/attempts')
 @login_required
@@ -484,19 +532,28 @@ def attempts():
     query = TestAttempt.query
 
     if config_filter and config_filter.isdigit():
-        query = query.filter_by(config_id=int(config_filter))
+        query = query.filter(TestAttempt.config_id == int(config_filter))
     if mode_filter and mode_filter in ['exam', 'practice']:
-        query = query.filter_by(mode=mode_filter)
-    if student_filter:
-        query = query.join(User).filter(User.name.ilike(f'%{student_filter}%'))
+        query = query.filter(TestAttempt.mode == mode_filter)
+    if student_filter and student_filter.strip():
+        query = query.join(User, TestAttempt.user_id == User.id).filter(
+            User.name.ilike(f'%{student_filter.strip()}%')
+        )
 
-    pagination = query.order_by(TestAttempt.started_at.desc()).paginate(page=page, per_page=25, error_out=False)
+    total_count = query.count()
+    pagination = query.order_by(TestAttempt.started_at.desc()).paginate(
+        page=page, per_page=25, error_out=False
+    )
     attempts_list = pagination.items
-    configs = ExamConfig.query.all()
+    configs = ExamConfig.query.order_by(ExamConfig.name).all()
 
-    return render_template('admin/attempts.html', attempts=attempts_list,
-                           pagination=pagination, configs=configs,
-                           config_filter=config_filter, mode_filter=mode_filter,
+    return render_template('admin/attempts.html',
+                           attempts=attempts_list,
+                           pagination=pagination,
+                           configs=configs,
+                           total_count=total_count,
+                           config_filter=config_filter,
+                           mode_filter=mode_filter,
                            student_filter=student_filter)
 
 
@@ -527,7 +584,7 @@ def export_attempts():
     return Response(
         output.getvalue(),
         mimetype='text/csv',
-        headers={'Content-Disposition': f'attachment; filename=attempts_export_{datetime.utcnow().strftime("%Y%m%d")}.csv'}
+        headers={'Content-Disposition': f'attachment; filename=attempts_export_{datetime.now(timezone.utc).strftime("%Y%m%d")}.csv'}
     )
 
 
@@ -584,8 +641,40 @@ def reset_attempt(attempt_id):
 @login_required
 @admin_required
 def practice_sessions():
+    # Auto-deactivate sessions inactive for more than 2 hours
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=2)
+    stale = PracticeSession.query.filter(
+        PracticeSession.status == 'active',
+        PracticeSession.last_active_at < cutoff
+    ).all()
+    auto_closed = 0
+    for s in stale:
+        s.status = 'abandoned'
+        auto_closed += 1
+    if auto_closed:
+        db.session.commit()
+        log_action('Auto-abandoned practice sessions', f'{auto_closed} sessions inactive >2h')
+
     sessions = PracticeSession.query.order_by(PracticeSession.started_at.desc()).all()
-    return render_template('admin/practice_sessions.html', sessions=sessions)
+    return render_template('admin/practice_sessions.html', sessions=sessions,
+                           auto_closed=auto_closed)
+
+
+@admin_bp.route('/practice_sessions/<int:session_id>/deactivate', methods=['POST'])
+@login_required
+@admin_required
+def deactivate_practice_session(session_id):
+    practice_session = PracticeSession.query.get_or_404(session_id)
+    if practice_session.status == 'active':
+        practice_session.status = 'abandoned'
+        db.session.commit()
+        log_action('Manually abandoned practice session',
+                   f'Session ID: {session_id}, User: {practice_session.user.name if practice_session.user else "?"}',
+                   user_id=practice_session.user_id)
+        flash(f'Practice session deactivated.', 'success')
+    else:
+        flash('Session is not active.', 'warning')
+    return redirect(url_for('admin.practice_sessions'))
 
 
 # ── Analytics ──────────────────────────────────────────
@@ -613,8 +702,8 @@ def analytics():
     # Daily exam attempts (last 14 days)
     daily_data = []
     for i in range(13, -1, -1):
-        day = datetime.utcnow().date() - timedelta(days=i)
-        day_start = datetime(day.year, day.month, day.day)
+        day = datetime.now(timezone.utc).date() - timedelta(days=i)
+        day_start = datetime(day.year, day.month, day.day, tzinfo=timezone.utc)
         day_end = day_start + timedelta(days=1)
         count = TestAttempt.query.filter(
             TestAttempt.started_at >= day_start,
@@ -623,25 +712,64 @@ def analytics():
         ).count()
         daily_data.append({'date': day.strftime('%b %d'), 'count': count})
 
-    # Topic-wise accuracy
-    topic_accuracy = {}
+    # Topic-wise accuracy + hardest questions
+    # BUG FIX: Collect all question IDs first, then do ONE bulk query instead
+    # of calling Question.query.get() for every single question in every attempt (N+1).
     all_attempts = TestAttempt.query.filter(TestAttempt.status.in_(['submitted', 'timeout'])).all()
+
+    all_q_ids = set()
     for attempt in all_attempts:
         qdata = json.loads(attempt.questions_json) if attempt.questions_json else []
         for qd in qdata:
-            q = Question.query.get(qd.get('q_id'))
-            if q:
-                if q.topic not in topic_accuracy:
-                    topic_accuracy[q.topic] = {'correct': 0, 'total': 0}
-                topic_accuracy[q.topic]['total'] += 1
-                given = qd.get('given_answer', '')
-                if given and given == q.correct_ans:
-                    topic_accuracy[q.topic]['correct'] += 1
+            if qd.get('q_id'):
+                all_q_ids.add(qd['q_id'])
+
+    questions_map = {q.id: q for q in Question.query.filter(Question.id.in_(all_q_ids)).all()}
+
+    topic_accuracy = {}
+    q_stats = {}
+
+    for attempt in all_attempts:
+        qdata = json.loads(attempt.questions_json) if attempt.questions_json else []
+        for qd in qdata:
+            qid = qd.get('q_id')
+            q = questions_map.get(qid)
+            if not q:
+                continue
+
+            given = qd.get('given_answer', '')
+
+            # Topic accuracy
+            if q.topic not in topic_accuracy:
+                topic_accuracy[q.topic] = {'correct': 0, 'total': 0}
+            topic_accuracy[q.topic]['total'] += 1
+            if given and given == q.correct_ans:
+                topic_accuracy[q.topic]['correct'] += 1
+
+            # Question difficulty stats
+            if qid not in q_stats:
+                q_stats[qid] = {'correct': 0, 'total': 0}
+            q_stats[qid]['total'] += 1
+            if given and given == q.correct_ans:
+                q_stats[qid]['correct'] += 1
 
     topic_chart_data = []
     for topic, data in sorted(topic_accuracy.items()):
         pct = round(data['correct'] / data['total'] * 100, 1) if data['total'] > 0 else 0
         topic_chart_data.append({'topic': topic, 'accuracy': pct, 'total': data['total']})
+
+    hardest = []
+    for qid, data in q_stats.items():
+        if data['total'] > 0:
+            q = questions_map.get(qid)
+            if q:
+                pct = round(data['correct'] / data['total'] * 100, 1)
+                hardest.append({
+                    'id': qid, 'question': q.question[:80],
+                    'topic': q.topic, 'accuracy': pct, 'attempts': data['total']
+                })
+    hardest.sort(key=lambda x: x['accuracy'])
+    hardest = hardest[:10]
 
     # Exam vs Practice ratio
     exam_count = TestAttempt.query.filter_by(mode='exam').count()
@@ -656,33 +784,6 @@ def analytics():
         TestAttempt.mode == 'exam',
         TestAttempt.status.in_(['submitted', 'timeout'])
     ).group_by(User.id).order_by(db.desc('best_score')).limit(10).all()
-
-    # 10 hardest questions
-    q_stats = {}
-    for attempt in all_attempts:
-        qdata = json.loads(attempt.questions_json) if attempt.questions_json else []
-        for qd in qdata:
-            qid = qd.get('q_id')
-            if qid not in q_stats:
-                q_stats[qid] = {'correct': 0, 'total': 0}
-            q_stats[qid]['total'] += 1
-            given = qd.get('given_answer', '')
-            q_obj = Question.query.get(qid)
-            if q_obj and given == q_obj.correct_ans:
-                q_stats[qid]['correct'] += 1
-
-    hardest = []
-    for qid, data in q_stats.items():
-        if data['total'] > 0:
-            q = Question.query.get(qid)
-            if q:
-                pct = round(data['correct'] / data['total'] * 100, 1)
-                hardest.append({
-                    'id': qid, 'question': q.question[:80],
-                    'topic': q.topic, 'accuracy': pct, 'attempts': data['total']
-                })
-    hardest.sort(key=lambda x: x['accuracy'])
-    hardest = hardest[:10]
 
     return render_template('admin/analytics.html',
                            total_exam_attempts=total_exam_attempts,
@@ -721,7 +822,7 @@ def export_analytics():
     return Response(
         output.getvalue(),
         mimetype='text/csv',
-        headers={'Content-Disposition': f'attachment; filename=analytics_student_scores_{datetime.utcnow().strftime("%Y%m%d")}.csv'}
+        headers={'Content-Disposition': f'attachment; filename=analytics_student_scores_{datetime.now(timezone.utc).strftime("%Y%m%d")}.csv'}
     )
 
 

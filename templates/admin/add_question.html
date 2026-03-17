@@ -2,6 +2,14 @@
 {% block title %}Add Question — {{ bank.name }} — DDCET Admin{% endblock %}
 {% block content %}
 <div class="main-content">
+    <!-- Breadcrumb -->
+    <div style="font-size:13px; color:var(--muted); margin-bottom:18px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+        <a href="{{ url_for('admin.banks') }}" style="color:var(--muted); text-decoration:none;">Banks</a>
+        <span>›</span>
+        <a href="{{ url_for('admin.bank_questions', bank_id=bank.id) }}" style="color:var(--muted); text-decoration:none;">{{ bank.name }}</a>
+        <span>›</span>
+        <span>Add Question</span>
+    </div>
     <h1 style="margin-bottom: 24px;">➕ Add Question to "{{ bank.name }}"</h1>
 
     <div class="card" style="max-width: 700px;">

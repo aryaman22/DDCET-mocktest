@@ -1,11 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Exam Result — DDCET{% endblock %}
+{% block head %}
+<style>
+    @media (max-width: 600px) {
+        .result-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 10px !important; }
+        .result-stat .value { font-size: 1.1rem !important; }
+        .review-options { grid-template-columns: 1fr !important; }
+        .review-header { flex-direction: column; gap: 6px; }
+        .tabs { flex-wrap: wrap; }
+        .tab-btn { flex: 1; min-width: 120px; font-size: 13px; }
+    }
+</style>
+{% endblock %}
 {% block content %}
 <div class="main-content" style="max-width: 900px; margin: 0 auto;">
     <div class="result-header">
         <h1>📊 Exam Result</h1>
-        <p class="text-muted">{{ config.name if config else 'Exam' }} · {{ attempt.submitted_at.strftime('%B %d, %Y') if
-            attempt.submitted_at else '' }}</p>
+        <p class="text-muted">{{ config.name if config else 'Exam' }} · {{ attempt.submitted_at | ist if attempt.submitted_at else '' }}</p>
 
         <!-- Progress Ring -->
         <div class="progress-ring-container" style="margin: 30px 0;">
@@ -58,7 +69,9 @@
     <!-- Topic Analysis -->
     <div id="tab-topics" class="tab-content active">
         <div class="chart-container">
-            <div class="bar-chart" id="topic-chart" style="min-height: 220px; padding-bottom: 30px;"></div>
+            <div style="position:relative; width:100%; overflow-x:auto;">
+                <div class="bar-chart" id="topic-chart" style="min-height:220px; padding-bottom:30px; min-width:300px;"></div>
+            </div>
         </div>
     </div>
 

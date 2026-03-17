@@ -1,11 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
-from models import db, User, TestAttempt, ExamConfig, Question
-from utils import calculate_exam_score
-from datetime import datetime, timezone
+from models import db, User
 import bcrypt as bc
 import secrets
-import json
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
 
@@ -130,66 +127,70 @@ def register():
 @auth_bp.route('/logout')
 @login_required
 def logout():
-    # Auto-submit any in-progress exam attempts
-    in_progress = TestAttempt.query.filter_by(
-        user_id=current_user.id,
-        status='in_progress',
-        mode='exam'
-    ).all()
-
-    for attempt in in_progress:
-        config = ExamConfig.query.get(attempt.config_id)
-        q_data = json.loads(attempt.questions_json) if attempt.questions_json else []
-        q_ids = [qd['q_id'] for qd in q_data]
-        questions_from_db = Question.query.filter(Question.id.in_(q_ids)).all()
-        questions_map = {q.id: q for q in questions_from_db}
-
-        # Build answers dict for scoring
-        user_answers = {}
-        questions_for_scoring = []
-        for qd in q_data:
-            q = questions_map.get(qd['q_id'])
-            if q:
-                questions_for_scoring.append(q)
-                if qd.get('given_answer'):
-                    user_answers[str(q.id)] = qd['given_answer']
-
-        if config:
-            result = calculate_exam_score(questions_for_scoring, user_answers, config)
-
-            # Update marks in q_data
-            for qd in q_data:
-                q = questions_map.get(qd['q_id'])
-                if q:
-                    given = user_answers.get(str(q.id), 'E')
-                    if q.correct_ans == 'X':
-                        qd['marks'] = config.marks_correct
-                    elif given in ['E', '', 'SKIP']:
-                        qd['marks'] = 0
-                    elif given == q.correct_ans:
-                        qd['marks'] = config.marks_correct
-                    else:
-                        qd['marks'] = -config.marks_wrong
-
-            attempt.questions_json = json.dumps(q_data)
-            attempt.score = result['marks']
-            attempt.max_score = result['max_score']
-            attempt.percentage = result['percentage']
-            attempt.correct_count = result['correct']
-            attempt.wrong_count = result['wrong']
-            attempt.unattempted = result['unattempted']
-            attempt.bonus_count = result['bonus']
-
-        attempt.status = 'timeout'
-        attempt.submitted_at = datetime.now(timezone.utc)
-        if attempt.started_at:
-            attempt.time_taken_sec = int((datetime.now(timezone.utc) - attempt.started_at).total_seconds())
-
-    if in_progress:
-        db.session.commit()
-        flash('Your in-progress exam has been auto-submitted.', 'warning')
-
     logout_user()
     flash('Logged out successfully.', 'success')
     return redirect(url_for('auth.login'))
 
+
+@auth_bp.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    if request.method == 'POST':
+        if not validate_csrf(request.form.get('csrf_token')):
+            flash('Invalid request. Please try again.', 'error')
+            return redirect(url_for('auth.profile'))
+
+        action = request.form.get('action', 'update_info')
+
+        if action == 'update_info':
+            name = request.form.get('name', '').strip()
+            engineering_branch = request.form.get('engineering_branch', '').strip()
+
+            VALID_BRANCHES = [
+                'Civil Engineering', 'Mechanical Engineering', 'Electrical Engineering',
+                'Computer Science and Engineering', 'Computer Engineering',
+                'Chemical Engineering', 'IT Engineering', 'Other'
+            ]
+
+            if not name:
+                flash('Name cannot be empty.', 'error')
+                return redirect(url_for('auth.profile'))
+
+            if engineering_branch and engineering_branch not in VALID_BRANCHES:
+                flash('Please select a valid engineering branch.', 'error')
+                return redirect(url_for('auth.profile'))
+
+            current_user.name = name
+            if engineering_branch:
+                current_user.engineering_branch = engineering_branch
+            db.session.commit()
+            flash('Profile updated successfully!', 'success')
+
+        elif action == 'change_password':
+            current_password = request.form.get('current_password', '')
+            new_password = request.form.get('new_password', '')
+            confirm_password = request.form.get('confirm_password', '')
+
+            if not bc.checkpw(current_password.encode('utf-8'), current_user.password.encode('utf-8')):
+                flash('Current password is incorrect.', 'error')
+                return redirect(url_for('auth.profile'))
+
+            if len(new_password) < 8:
+                flash('New password must be at least 8 characters.', 'error')
+                return redirect(url_for('auth.profile'))
+
+            if not any(c.isdigit() for c in new_password):
+                flash('New password must contain at least 1 number.', 'error')
+                return redirect(url_for('auth.profile'))
+
+            if new_password != confirm_password:
+                flash('New passwords do not match.', 'error')
+                return redirect(url_for('auth.profile'))
+
+            current_user.password = bc.hashpw(new_password.encode('utf-8'), bc.gensalt(12)).decode('utf-8')
+            db.session.commit()
+            flash('Password changed successfully!', 'success')
+
+        return redirect(url_for('auth.profile'))
+
+    return render_template('auth/profile.html')

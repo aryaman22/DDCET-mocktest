@@ -18,8 +18,7 @@
             {% endif %}
         </div>
         <div class="practice-stats">
-            <span id="q-counter" class="mono">Q 1 / {{ practice.questions_seen|length if practice.questions_seen != '[]'
-                else 0 }}</span>
+            <span id="q-counter" class="mono">Q 1 / {{ question_count }}</span>
             <span id="accuracy-display" class="accuracy">Accuracy: 0% (0/0)</span>
         </div>
     </div>
@@ -30,15 +29,17 @@
     </div>
 
     <!-- Main Content -->
-    <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+    <div style="max-width: 800px; margin: 0 auto; padding: 20px 16px 40px;">
         <div id="practice-container">
             <!-- Rendered by practice.js -->
         </div>
 
-        <div style="text-align: center; margin-top: 24px; display: flex; justify-content: center; gap: 10px;">
+        <div
+            style="text-align: center; margin-top: 24px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
             <button class="btn btn-danger" onclick="finishPractice()">🏁 Finish Practice</button>
             <a href="{{ url_for('student.home') }}" class="btn btn-outline">🏠 Home</a>
-            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">Logout</a>
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline"
+                style="color:var(--red);border-color:var(--red);">Logout</a>
         </div>
     </div>
 

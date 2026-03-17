@@ -1,20 +1,35 @@
 {% extends "base.html" %}
 {% block title %}Users — DDCET Admin{% endblock %}
+{% block head %}
+<style>
+  /* Prevent action column from clipping */
+  .users-table td:last-child { white-space: nowrap; min-width: 160px; }
+  .users-table td:nth-child(3) { max-width: 140px; word-break: break-word; white-space: normal; }
+  @media (max-width: 900px) {
+    .col-hide-md { display: none !important; }
+  }
+  @media (max-width: 640px) {
+    .col-hide-mobile { display: none !important; }
+    .table-dark td, .table-dark th { font-size: 0.78rem; padding: 9px 8px; }
+    .btn-group { flex-direction: column; gap: 4px; }
+  }
+</style>
+{% endblock %}
 {% block content %}
 <div class="main-content">
     <h1 style="margin-bottom: 24px;">👥 User Management</h1>
 
     <div class="table-responsive">
-        <table class="table-dark">
+        <table class="table-dark users-table">
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th>Enrollment No.</th>
-                    <th>Branch</th>
-                    <th>Email</th>
+                    <th class="col-hide-mobile">Enrollment No.</th>
+                    <th class="col-hide-md">Branch</th>
+                    <th class="col-hide-md">Email</th>
                     <th>Role</th>
-                    <th>Registered</th>
-                    <th>Last Attempt</th>
+                    <th class="col-hide-mobile">Registered</th>
+                    <th class="col-hide-mobile">Last Attempt</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -23,20 +38,16 @@
                 {% for user in users %}
                 <tr>
                     <td><strong>{{ user.name }}</strong></td>
-                    <td class="mono" style="font-size:.85rem;">{{ user.enrollment_number }}</td>
-                    <td style="font-size:.85rem;">{{ user.engineering_branch }}</td>
-                    <td class="text-muted">{{ user.email }}</td>
+                    <td class="mono col-hide-mobile" style="font-size:.85rem;">{{ user.enrollment_number }}</td>
+                    <td class="col-hide-md" style="font-size:.85rem;">{{ user.engineering_branch }}</td>
+                    <td class="text-muted col-hide-md">{{ user.email }}</td>
                     <td>
                         <span class="badge {{ 'badge-exam' if user.role == 'admin' else 'badge-muted' }}">
                             {{ user.role|upper }}
                         </span>
                     </td>
-                    <td class="mono" style="font-size:.8rem;">{{ user.created_at.strftime('%Y-%m-%d') if user.created_at
-                        else '' }}</td>
-                    <td class="mono" style="font-size:.8rem;">
-                        {{ user_last_attempts.get(user.id).strftime('%Y-%m-%d %H:%M') if user_last_attempts.get(user.id)
-                        else '—' }}
-                    </td>
+                    <td class="mono col-hide-mobile" style="font-size:.8rem;">{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '' }}</td>
+                    <td class="mono col-hide-mobile" style="font-size:.8rem;">{{ user_last_attempts.get(user.id) | ist if user_last_attempts.get(user.id) else '—' }}</td>
                     <td>
                         <span class="badge {{ 'badge-success' if user.is_active else 'badge-danger' }}">
                             {{ '✅ Active' if user.is_active else '❌ Inactive' }}

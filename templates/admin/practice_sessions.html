@@ -2,47 +2,88 @@
 {% block title %}Practice Sessions — DDCET Admin{% endblock %}
 {% block content %}
 <div class="main-content">
-    <h1 style="margin-bottom: 24px;">🎯 Practice Sessions</h1>
+    <div
+        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
+        <h1 style="margin-bottom:0;">🎯 Practice Sessions</h1>
+        <span class="badge badge-muted" style="font-size:.8rem;">Sessions inactive &gt;2h are auto-abandoned on page
+            load</span>
+    </div>
+
+    {% if auto_closed and auto_closed > 0 %}
+    <div class="info-box info-box-yellow" style="margin-bottom:20px;">
+        ⚡ {{ auto_closed }} session{{ 's' if auto_closed > 1 else '' }} automatically marked as abandoned (inactive
+        &gt;2 hours).
+    </div>
+    {% endif %}
 
     {% if sessions %}
-    <table class="table-dark">
-        <thead>
-            <tr>
-                <th>Student</th>
-                <th>Config</th>
-                <th>Started</th>
-                <th>Answered</th>
-                <th>Correct</th>
-                <th>Accuracy</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for s in sessions %}
-            <tr>
-                <td>{{ s.user.name if s.user else 'N/A' }}</td>
-                <td>{{ s.config.name if s.config else 'N/A' }}</td>
-                <td class="mono" style="font-size:.8rem;">{{ s.started_at.strftime('%Y-%m-%d %H:%M') if s.started_at
-                    else '' }}</td>
-                <td class="mono">{{ s.total_answered }}</td>
-                <td class="mono text-green">{{ s.total_correct }}</td>
-                <td class="mono">
-                    {% if s.total_answered > 0 %}
-                    {{ ((s.total_correct / s.total_answered) * 100) | round(1) }}%
-                    {% else %}
-                    —
-                    {% endif %}
-                </td>
-                <td>
-                    <span
-                        class="badge {{ 'badge-success' if s.status == 'completed' else 'badge-warning' if s.status == 'active' else 'badge-muted' }}">
-                        {{ s.status }}
-                    </span>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table-dark">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Config</th>
+                    <th>Started (IST)</th>
+                    <th>Last Active (IST)</th>
+                    <th>Answered</th>
+                    <th>Correct</th>
+                    <th>Accuracy</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in sessions %}
+                <tr>
+                    <td><strong>{{ s.user.name if s.user else 'N/A' }}</strong></td>
+                    <td>{{ s.config.name if s.config else 'N/A' }}</td>
+                    <td class="mono" style="font-size:.8rem;">{{ s.started_at | ist }}</td>
+                    <td class="mono" style="font-size:.8rem;">{{ s.last_active_at | ist }}</td>
+                    <td class="mono">{{ s.total_answered }}</td>
+                    <td class="mono text-green">{{ s.total_correct }}</td>
+                    <td class="mono">
+                        {% if s.total_answered > 0 %}
+                        {{ ((s.total_correct / s.total_answered) * 100) | round(1) }}%
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if s.status == 'completed' %}
+                        <span class="badge badge-success">✅ Completed</span>
+                        {% elif s.status == 'active' %}
+                        <span class="badge badge-warning">🟡 Active</span>
+                        {% elif s.status == 'abandoned' %}
+                        <span class="badge badge-danger">🔴 Abandoned</span>
+                        {% else %}
+                        <span class="badge badge-muted">{{ s.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if s.status == 'active' %}
+                        <form action="{{ url_for('admin.deactivate_practice_session', session_id=s.id) }}" method="POST"
+                            style="display:inline;" onsubmit="return confirm('Deactivate this practice session?')">
+                            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+                            <button type="submit" class="btn btn-danger btn-sm">⏹ Deactivate</button>
+                        </form>
+                        {% else %}
+                        <span class="text-muted" style="font-size:.8rem;">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div
+        style="margin-top:14px; font-size:.82rem; color:var(--text-secondary); display:flex; gap:20px; flex-wrap:wrap;">
+        <span>Total: <strong>{{ sessions|length }}</strong></span>
+        <span>Active: <strong>{{ sessions|selectattr('status','equalto','active')|list|length }}</strong></span>
+        <span>Completed: <strong>{{ sessions|selectattr('status','equalto','completed')|list|length }}</strong></span>
+        <span>Abandoned: <strong>{{ sessions|selectattr('status','equalto','abandoned')|list|length }}</strong></span>
+    </div>
+
     {% else %}
     <div class="empty-state">
         <div class="empty-icon">🎯</div>

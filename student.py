@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort
+from auth import validate_csrf
 from flask_login import login_required, current_user
 from models import db, User, QuestionBank, Question, ExamConfig, TestAttempt, PracticeSession, AdminLog
 from utils import select_questions_for_config, calculate_exam_score
@@ -223,12 +224,19 @@ def _render_exam(attempt, config):
             if qd.get('given_answer'):
                 answers[str(q.id)] = qd['given_answer']
 
+    # BUG FIX: Use actual remaining seconds based on when exam started,
+    # so a page refresh does NOT reset the timer to full duration.
+    total_seconds = config.duration_minutes * 60
+    elapsed = int((datetime.now(timezone.utc) - attempt.started_at).total_seconds())
+    remaining_seconds = max(0, total_seconds - elapsed)
+
     return render_template('student/exam.html',
                            attempt=attempt,
                            config=config,
                            questions_json=json.dumps(client_questions),
                            saved_answers=json.dumps(answers),
-                           duration_seconds=config.duration_minutes * 60)
+                           duration_seconds=remaining_seconds,
+                           question_count=len(client_questions))
 
 
 @student_bp.route('/exam/<int:attempt_id>/save', methods=['POST'])
@@ -423,6 +431,10 @@ def result(attempt_id):
 @login_required
 @student_required
 def start_practice(config_id):
+    if not validate_csrf(request.form.get('csrf_token')):
+        flash('Invalid request. Please try again.', 'error')
+        return redirect(url_for('student.home'))
+
     config = ExamConfig.query.get_or_404(config_id)
     if config.mode != 'practice' or not config.is_active:
         abort(404)
@@ -432,7 +444,7 @@ def start_practice(config_id):
         flash('No questions available for this practice config.', 'error')
         return redirect(url_for('student.home'))
 
-    session = PracticeSession(
+    practice_session = PracticeSession(
         user_id=current_user.id,
         config_id=config_id,
         started_at=datetime.now(timezone.utc),
@@ -440,10 +452,10 @@ def start_practice(config_id):
         questions_seen=json.dumps([q.id for q in questions]),
         status='active'
     )
-    db.session.add(session)
+    db.session.add(practice_session)
     db.session.commit()
 
-    return redirect(url_for('student.practice_page', session_id=session.id))
+    return redirect(url_for('student.practice_page', session_id=practice_session.id))
 
 
 @student_bp.route('/practice/<int:session_id>')
@@ -488,7 +500,8 @@ def practice_page(session_id):
                            practice=practice,
                            config=config,
                            questions_json=json.dumps(client_questions),
-                           topic_drill=topic_drill)
+                           topic_drill=topic_drill,
+                           question_count=len(client_questions))
 
 
 @student_bp.route('/practice/<int:session_id>/answer', methods=['POST'])

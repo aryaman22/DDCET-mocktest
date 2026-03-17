@@ -1,35 +1,57 @@
 {% extends "base.html" %}
 {% block title %}Attempts — DDCET Admin{% endblock %}
+{% block head %}
+<style>
+    @media (max-width: 640px) {
+        .col-hide-mobile {
+            display: none !important;
+        }
+
+        .table-dark td,
+        .table-dark th {
+            font-size: 11px;
+            padding: 8px 6px;
+        }
+    }
+</style>
+{% endblock %}
 {% block content %}
 <div class="main-content">
-    <div class="d-flex justify-between align-center" style="margin-bottom: 24px;">
-        <h1>📋 Exam Attempts</h1>
+    <div class="d-flex justify-between align-center" style="margin-bottom: 24px; flex-wrap:wrap; gap:12px;">
+        <div>
+            <h1 style="margin-bottom:4px;">📋 Exam Attempts</h1>
+            {% if total_count is defined %}
+            <p class="text-muted" style="font-size:.85rem; margin:0;">
+                {{ total_count }} attempt{{ 's' if total_count != 1 else '' }} found
+            </p>
+            {% endif %}
+        </div>
         <a href="{{ url_for('admin.export_attempts') }}" class="btn btn-outline">📥 Export CSV</a>
     </div>
 
     <!-- Filters -->
     <div class="card" style="margin-bottom: 20px; padding: 16px;">
-        <form method="GET" action="{{ url_for('admin.attempts') }}" class="form-inline">
-            <div class="form-group" style="margin-bottom: 0;">
-                <select name="config_id" class="form-control" style="width: auto;">
+        <form method="GET" action="{{ url_for('admin.attempts') }}">
+            <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+                <select name="config_id" class="form-control" style="flex:1; min-width:160px;">
                     <option value="">All Configs</option>
                     {% for c in configs %}
                     <option value="{{ c.id }}" {{ 'selected' if config_filter==c.id|string }}>{{ c.name }}</option>
                     {% endfor %}
                 </select>
-            </div>
-            <div class="form-group" style="margin-bottom: 0;">
-                <select name="mode" class="form-control" style="width: auto;">
+                <select name="mode" class="form-control" style="flex:1; min-width:130px;">
                     <option value="">All Modes</option>
-                    <option value="exam" {{ 'selected' if mode_filter=='exam' }}>Exam</option>
-                    <option value="practice" {{ 'selected' if mode_filter=='practice' }}>Practice</option>
+                    <option value="exam" {{ 'selected' if mode_filter=='exam' }}>📝 Exam</option>
+                    <option value="practice" {{ 'selected' if mode_filter=='practice' }}>🎯 Practice</option>
                 </select>
+                <input type="text" name="student" class="form-control" placeholder="Search student name..."
+                    value="{{ student_filter }}" style="flex:2; min-width:160px;">
+                <button type="submit" class="btn btn-primary btn-sm" style="white-space:nowrap;">🔍 Search</button>
+                {% if config_filter or mode_filter or student_filter %}
+                <a href="{{ url_for('admin.attempts') }}" class="btn btn-outline btn-sm" style="white-space:nowrap;">✕
+                    Clear</a>
+                {% endif %}
             </div>
-            <div class="form-group" style="margin-bottom: 0;">
-                <input type="text" name="student" class="form-control" placeholder="Student name..."
-                    value="{{ student_filter }}" style="width: 180px;">
-            </div>
-            <button type="submit" class="btn btn-outline btn-sm">🔍 Filter</button>
         </form>
     </div>
 
@@ -39,12 +61,12 @@
             <thead>
                 <tr>
                     <th>Student</th>
-                    <th>Config</th>
-                    <th>Mode</th>
-                    <th>Date</th>
+                    <th class="col-hide-mobile">Config</th>
+                    <th class="col-hide-mobile">Mode</th>
+                    <th class="col-hide-mobile">Date</th>
                     <th>Score</th>
                     <th>%</th>
-                    <th>Time</th>
+                    <th class="col-hide-mobile">Time</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -53,20 +75,20 @@
                 <tr class="clickable-row"
                     onclick="window.location.href='{{ url_for('admin.attempt_detail', attempt_id=a.id) }}';">
                     <td>{{ a.user.name if a.user else 'N/A' }}</td>
-                    <td>{{ a.config.name if a.config else 'N/A' }}</td>
-                    <td>
+                    <td class="col-hide-mobile">{{ a.config.name if a.config else 'N/A' }}</td>
+                    <td class="col-hide-mobile">
                         <span class="badge {{ 'badge-exam' if a.mode == 'exam' else 'badge-practice' }}">
                             {{ '📝' if a.mode == 'exam' else '🎯' }} {{ a.mode|upper }}
                         </span>
                     </td>
-                    <td class="mono" style="font-size:.8rem;">{{ a.started_at.strftime('%Y-%m-%d %H:%M') if a.started_at
-                        else '' }}</td>
+                    <td class="mono col-hide-mobile" style="font-size:.8rem;">
+                        {{ a.started_at.strftime('%Y-%m-%d %H:%M') if a.started_at else '' }}
+                    </td>
                     <td class="mono">{{ a.score }}/{{ a.max_score }}</td>
                     <td class="mono {{ 'text-green' if a.percentage >= 50 else 'text-red' }}">{{ a.percentage }}%</td>
-                    <td class="mono" style="font-size:.8rem;">
+                    <td class="mono col-hide-mobile" style="font-size:.8rem;">
                         {% if a.time_taken_sec %}{{ (a.time_taken_sec // 60) }}m {{ a.time_taken_sec % 60 }}s{% else
-                        %}—{%
-                        endif %}
+                        %}—{% endif %}
                     </td>
                     <td>
                         <span
@@ -114,8 +136,14 @@
     {% else %}
     <div class="empty-state">
         <div class="empty-icon">📋</div>
-        <h3>No attempts found</h3>
-        <p>No exam attempts match your filters.</p>
+        {% if config_filter or mode_filter or student_filter %}
+        <h3>No attempts match your filters</h3>
+        <p>Try clearing the filters to see all attempts.</p>
+        <a href="{{ url_for('admin.attempts') }}" class="btn btn-outline" style="margin-top:12px;">✕ Clear Filters</a>
+        {% else %}
+        <h3>No attempts yet</h3>
+        <p>Exam attempts will appear here once students start taking tests.</p>
+        {% endif %}
     </div>
     {% endif %}
 </div>

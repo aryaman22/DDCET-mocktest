@@ -107,9 +107,7 @@
                     {% for a in history %}
                     <tr>
                         <td>{{ a.config.name if a.config else 'N/A' }}</td>
-                        <td class="mono" style="font-size:.8rem;">{{ a.started_at.strftime('%Y-%m-%d %H:%M') if
-                            a.started_at
-                            else '' }}</td>
+                        <td class="mono" style="font-size:.8rem;">{{ a.started_at | ist }}</td>
                         <td class="mono">{{ a.score }}/{{ a.max_score }}</td>
                         <td class="mono {{ 'text-green' if a.percentage >= 50 else 'text-red' }}">{{ a.percentage }}%
                         </td>

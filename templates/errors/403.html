@@ -4,16 +4,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>403 — Forbidden | DDCET</title>
+    <title>403 — Access Forbidden | DDCET</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        .error-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .error-inner {
+            max-width: 460px;
+            width: 100%;
+        }
+
+        .error-code {
+            font-size: 96px;
+            font-weight: 700;
+            line-height: 1;
+            opacity: 0.08;
+            letter-spacing: -4px;
+            margin-bottom: 8px;
+            color: var(--color-text-primary, #1a1a1a);
+        }
+
+        .error-icon {
+            font-size: 52px;
+            margin-bottom: 18px;
+        }
+
+        .error-title {
+            font-size: 22px;
+            font-weight: 500;
+            margin: 0 0 10px;
+            color: var(--color-text-primary, #1a1a1a);
+        }
+
+        .error-desc {
+            font-size: 15px;
+            line-height: 1.65;
+            color: var(--color-text-secondary, #666);
+            margin: 0 0 32px;
+        }
+
+        .error-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+    </style>
 </head>
 
 <body>
     <div class="error-page">
-        <div class="error-code">403</div>
-        <h2>Access Forbidden</h2>
-        <p>You don't have permission to access this page.</p>
-        <a href="/" class="btn btn-primary">🏠 Go Home</a>
+        <div class="error-inner">
+            <div class="error-code">403</div>
+            <div class="error-icon">🚫</div>
+            <h1 class="error-title">Access Forbidden</h1>
+            <p class="error-desc">
+                You don't have permission to view this page.<br>
+                If you think this is a mistake, please contact your administrator.
+            </p>
+            <div class="error-actions">
+                {% if current_user.is_authenticated %}
+                {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-primary">🏠 Go to Dashboard</a>
+                {% else %}
+                <a href="{{ url_for('student.home') }}" class="btn btn-primary">🏠 Go to Home</a>
+                {% endif %}
+                {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary">🔐 Sign In</a>
+                {% endif %}
+                <a href="javascript:history.back()" class="btn btn-outline">← Go Back</a>
+            </div>
+        </div>
     </div>
 </body>
 

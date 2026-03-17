@@ -43,7 +43,14 @@
     </div>
 
     {% elif mode == 'questions' %}
-    <div class="d-flex justify-between align-center" style="margin-bottom: 16px;">
+    <!-- Breadcrumb -->
+    <div
+        style="font-size:13px; color:var(--muted); margin-bottom:14px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+        <a href="{{ url_for('admin.banks') }}" style="color:var(--muted); text-decoration:none;">Banks</a>
+        <span>›</span>
+        <span>{{ bank.name }}</span>
+    </div>
+    <div class="d-flex justify-between align-center" style="margin-bottom: 16px; flex-wrap:wrap; gap:10px;">
         <div>
             <h1>{{ bank.name }}</h1>
             <p class="text-muted">{{ bank.description or '' }}</p>

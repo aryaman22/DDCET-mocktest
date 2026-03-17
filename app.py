@@ -29,6 +29,36 @@ def create_app():
     def load_user(uid):
         return User.query.get(int(uid))
 
+    # ── IST timezone filter for all templates ──
+    from datetime import timezone, timedelta
+    IST = timezone(timedelta(hours=5, minutes=30))
+
+    @app.template_filter('ist')
+    def to_ist(dt):
+        """Convert UTC datetime to IST string for display."""
+        if dt is None:
+            return ''
+        try:
+            # If naive, assume UTC
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            ist_dt = dt.astimezone(IST)
+            return ist_dt.strftime('%Y-%m-%d %H:%M')
+        except Exception:
+            return str(dt)
+
+    @app.template_filter('ist_time')
+    def to_ist_time(dt):
+        """Convert UTC datetime to IST time only."""
+        if dt is None:
+            return ''
+        try:
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(IST).strftime('%H:%M:%S')
+        except Exception:
+            return ''
+
     from auth import auth_bp
     from admin import admin_bp
     from student import student_bp

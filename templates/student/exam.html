@@ -6,16 +6,134 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config.name }} — Exam — DDCET</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        /* ── Mobile exam layout ── */
+        @media (max-width: 768px) {
+            .exam-container {
+                flex-direction: column !important;
+                height: auto !important;
+            }
+
+            .exam-question-panel {
+                width: 100% !important;
+                height: auto !important;
+                padding-bottom: 80px;
+                /* space for fixed bottom bar */
+            }
+
+            /* Sidebar becomes a slide-up drawer on mobile */
+            .exam-sidebar {
+                position: fixed !important;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100% !important;
+                max-height: 70vh;
+                overflow-y: auto;
+                border-radius: 18px 18px 0 0;
+                box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
+                transform: translateY(calc(100% - 56px));
+                transition: transform 0.3s ease;
+                z-index: 100;
+            }
+
+            .exam-sidebar.drawer-open {
+                transform: translateY(0);
+            }
+
+            /* Drawer handle bar */
+            .sidebar-drawer-handle {
+                display: flex !important;
+            }
+
+            /* Compact sticky bottom bar showing key info */
+            .exam-mobile-bar {
+                display: flex !important;
+            }
+        }
+
+        /* Hide mobile-only elements on desktop */
+        .sidebar-drawer-handle {
+            display: none;
+        }
+
+        .exam-mobile-bar {
+            display: none;
+        }
+
+        .sidebar-drawer-handle {
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px 8px;
+            cursor: pointer;
+            gap: 12px;
+            border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+            position: sticky;
+            top: 0;
+            background: inherit;
+            z-index: 1;
+        }
+
+        .drawer-pill {
+            width: 36px;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--muted, #999);
+            opacity: 0.4;
+            margin: 0 auto 4px;
+        }
+
+        .drawer-title {
+            font-size: .85rem;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .drawer-timer-compact {
+            font-size: .95rem;
+            font-weight: 600;
+            font-family: var(--font-mono, monospace);
+        }
+
+        .exam-mobile-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            gap: 10px;
+            z-index: 99;
+            border-top: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+        }
+
+        .mobile-bar-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 11px;
+            gap: 1px;
+        }
+
+        .mobile-bar-stat .val {
+            font-size: 15px;
+            font-weight: 600;
+            font-family: var(--font-mono, monospace);
+            line-height: 1;
+        }
+    </style>
 </head>
 
 <body>
     {% block nav %}
     <div class="exam-nav">
-        <span class="exam-title">🎓 DDCET Exam Portal · {{ config.name }}</span>
+        <span class="exam-title">🎓 DDCET · {{ config.name }}</span>
         <div class="d-flex align-center gap-2">
             <span class="exam-live">LIVE</span>
             <span id="nav-progress" class="mono" style="color:var(--muted);font-size:.85rem; margin-right: 10px;">Q1/{{
-                attempt.questions_json|length }}</span>
+                question_count }}</span>
             <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm"
                 style="color: var(--red); border-color: var(--red);">Logout</a>
         </div>
@@ -28,8 +146,20 @@
             <!-- Rendered by exam.js -->
         </div>
 
-        <!-- Right Panel: Timer + Palette -->
-        <div class="exam-sidebar">
+        <!-- Right Panel: Timer + Palette (slide-up drawer on mobile) -->
+        <div class="exam-sidebar" id="examSidebar">
+
+            <!-- Drawer handle (mobile only) -->
+            <div class="sidebar-drawer-handle" id="drawerHandle" onclick="toggleDrawer()">
+                <div style="flex:1">
+                    <div class="drawer-pill"></div>
+                    <div class="drawer-title">📋 Question Palette</div>
+                </div>
+                <span class="drawer-timer-compact" id="drawer-timer-compact">--:--</span>
+                <button class="btn btn-danger btn-sm"
+                    onclick="event.stopPropagation(); showSubmitModal()">Submit</button>
+            </div>
+
             <!-- Timer -->
             <div class="timer-box">
                 <div class="timer-label">⏱ TIME REMAINING</div>
@@ -87,6 +217,28 @@
         </div>
     </div>
 
+    <!-- Mobile bottom bar (always visible, shows key stats + open drawer) -->
+    <div class="exam-mobile-bar" id="mobileBar">
+        <div class="mobile-bar-stat" onclick="toggleDrawer()">
+            <span class="val text-green" id="mob-answered">0</span>
+            <span>Done</span>
+        </div>
+        <div class="mobile-bar-stat" onclick="toggleDrawer()">
+            <span class="val text-muted" id="mob-unanswered">0</span>
+            <span>Left</span>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="toggleDrawer()" style="padding:6px 14px;">
+            📋 Palette
+        </button>
+        <div class="mobile-bar-stat">
+            <span class="val mono" id="mob-timer">--:--</span>
+            <span>Remaining</span>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="showSubmitModal()" style="padding:6px 14px;">
+            Submit
+        </button>
+    </div>
+
     <script>
         window.ATTEMPT_ID = {{ attempt.id }};
         window.DURATION_SECONDS = {{ duration_seconds }};
@@ -94,6 +246,39 @@
         window.SAVED_ANSWERS = {{ saved_answers | safe }};
     </script>
     <script src="{{ url_for('static', filename='js/exam.js') }}"></script>
+    <script>
+        /* ── Mobile drawer ── */
+        function toggleDrawer() {
+            const sidebar = document.getElementById('examSidebar');
+            sidebar.classList.toggle('drawer-open');
+        }
+        /* Close drawer when a palette button is clicked on mobile */
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('.palette-btn') || e.target.closest('.palette-num')) {
+                const sidebar = document.getElementById('examSidebar');
+                if (window.innerWidth <= 768) sidebar.classList.remove('drawer-open');
+            }
+        });
+        /* Sync mobile bottom bar stats — called by exam.js after it updates stats */
+        function syncMobileBar() {
+            const answered = document.getElementById('stat-answered');
+            const unanswered = document.getElementById('stat-unanswered');
+            const timer = document.getElementById('timer-display');
+            if (answered) document.getElementById('mob-answered').textContent = answered.textContent;
+            if (unanswered) document.getElementById('mob-unanswered').textContent = unanswered.textContent;
+            if (timer) {
+                const t = timer.textContent;
+                /* Compact HH:MM:SS → MM:SS for small space */
+                const parts = t.split(':');
+                document.getElementById('mob-timer').textContent =
+                    parts.length === 3 ? parts[1] + ':' + parts[2] : t;
+                document.getElementById('drawer-timer-compact').textContent =
+                    parts.length === 3 ? parts[1] + ':' + parts[2] : t;
+            }
+        }
+        /* Poll every second to keep mobile bar in sync */
+        setInterval(syncMobileBar, 1000);
+    </script>
 </body>
 
 </html>

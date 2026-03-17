@@ -7,14 +7,6 @@
         <h1>🎓 DDCET Portal</h1>
         <p class="subtitle">Diploma to Degree Common Entrance Test</p>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        {% for category, message in messages %}
-        <div class="flash flash-{{ category }}" style="margin-bottom: 16px;">{{ message }}</div>
-        {% endfor %}
-        {% endif %}
-        {% endwith %}
-
         <form method="POST" action="{{ url_for('auth.login') }}">
             <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
             <div class="form-group">

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}My Profile — DDCET{% endblock %}
+{% block content %}
+<div class="main-content" style="max-width: 640px;">
+
+    <div style="display:flex; align-items:center; gap:16px; margin-bottom:28px; flex-wrap:wrap;">
+        <div class="profile-avatar-lg">{{ current_user.name[0]|upper }}</div>
+        <div>
+            <h1 style="margin-bottom:4px;">{{ current_user.name }}</h1>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <span class="badge badge-muted">{{ current_user.enrollment_number }}</span>
+                <span class="badge {{ 'badge-exam' if current_user.role == 'admin' else 'badge-practice' }}">
+                    {{ current_user.role|upper }}
+                </span>
+            </div>
+            <p class="text-muted" style="font-size:0.85rem; margin-top:4px;">{{ current_user.email }}</p>
+        </div>
+    </div>
+
+    <!-- ── Update Info ── -->
+    <div class="profile-card" style="margin-bottom:20px;">
+        <div class="profile-section-title">Account Information</div>
+
+        <form method="POST" action="{{ url_for('auth.profile') }}">
+            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+            <input type="hidden" name="action" value="update_info">
+
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" name="name" id="name" class="form-control" value="{{ current_user.name }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="enrollment_number">Enrollment Number</label>
+                <input type="text" class="form-control" value="{{ current_user.enrollment_number }}" disabled
+                    style="opacity:0.6; cursor:not-allowed;">
+                <small class="text-muted" style="font-size:0.78rem;">Enrollment number cannot be changed.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" class="form-control" value="{{ current_user.email }}" disabled
+                    style="opacity:0.6; cursor:not-allowed;">
+                <small class="text-muted" style="font-size:0.78rem;">Email cannot be changed. Contact admin if
+                    needed.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="engineering_branch">Engineering Branch</label>
+                <select name="engineering_branch" id="engineering_branch" class="form-control">
+                    {% set branches = [
+                    'Civil Engineering', 'Mechanical Engineering', 'Electrical Engineering',
+                    'Computer Science and Engineering', 'Computer Engineering',
+                    'Chemical Engineering', 'IT Engineering', 'Other'
+                    ] %}
+                    {% for branch in branches %}
+                    <option value="{{ branch }}" {{ 'selected' if current_user.engineering_branch==branch }}>
+                        {{ branch }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Member Since</label>
+                <input type="text" class="form-control"
+                    value="{{ current_user.created_at.strftime('%B %d, %Y') if current_user.created_at else '—' }}"
+                    disabled style="opacity:0.6; cursor:not-allowed;">
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline">← Dashboard</a>
+                {% else %}
+                <a href="{{ url_for('student.home') }}" class="btn btn-outline">← Home</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- ── Change Password ── -->
+    <div class="profile-card">
+        <div class="profile-section-title">Change Password</div>
+
+        <form method="POST" action="{{ url_for('auth.profile') }}">
+            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+            <input type="hidden" name="action" value="change_password">
+
+            <div class="form-group">
+                <label for="current_password">Current Password</label>
+                <input type="password" name="current_password" id="current_password" class="form-control"
+                    placeholder="Enter your current password" required>
+            </div>
+
+            <div class="form-group">
+                <label for="new_password">New Password</label>
+                <input type="password" name="new_password" id="new_password" class="form-control"
+                    placeholder="Min 8 chars, at least 1 number" required minlength="8">
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Confirm New Password</label>
+                <input type="password" name="confirm_password" id="confirm_password" class="form-control"
+                    placeholder="Re-enter new password" required>
+            </div>
+
+            <div class="info-box info-box-yellow">
+                ⚠️ After changing your password you will need to use the new password on your next login.
+            </div>
+
+            <button type="submit" class="btn btn-warning">🔑 Change Password</button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

@@ -7,14 +7,6 @@
         <h1>📝 Create Account</h1>
         <p class="subtitle">Register as a student to start practicing</p>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        {% for category, message in messages %}
-        <div class="flash flash-{{ category }}" style="margin-bottom: 16px;">{{ message }}</div>
-        {% endfor %}
-        {% endif %}
-        {% endwith %}
-
         <form method="POST" action="{{ url_for('auth.register') }}">
             <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
             <div class="form-group">

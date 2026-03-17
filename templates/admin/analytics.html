@@ -1,213 +1,134 @@
 {% extends "base.html" %}
-{% block title %}Analytics — DDCET Admin{% endblock %}
+{% block title %}Attempts — DDCET Admin{% endblock %}
 {% block content %}
 <div class="main-content">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h1 style="margin-bottom: 0;">📊 Analytics</h1>
-        <a href="{{ url_for('admin.export_analytics') }}" class="btn btn-primary"
-            style="display: flex; align-items: center; gap: 8px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            Export Data
-        </a>
+    <div class="d-flex justify-between align-center" style="margin-bottom: 24px;">
+        <h1>📋 Exam Attempts</h1>
+        <a href="{{ url_for('admin.export_attempts') }}" class="btn btn-outline">📥 Export CSV</a>
     </div>
 
-    <div class="card-grid">
-        <div class="stat-card">
-            <div class="stat-icon">📝</div>
-            <div class="stat-value mono">{{ total_exam_attempts }}</div>
-            <div class="stat-label">Total Exam Attempts</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">📈</div>
-            <div class="stat-value mono">{{ avg_exam_score }}%</div>
-            <div class="stat-label">Avg Exam Score</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">✅</div>
-            <div class="stat-value mono">{{ pass_rate }}%</div>
-            <div class="stat-label">Pass Rate</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">🎯</div>
-            <div class="stat-value mono">{{ total_practice }}</div>
-            <div class="stat-label">Practice Sessions</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">🎯</div>
-            <div class="stat-value mono">{{ avg_practice_accuracy }}%</div>
-            <div class="stat-label">Avg Practice Accuracy</div>
-        </div>
-    </div>
-
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-        <!-- Daily Attempts Chart -->
-        <div class="chart-container">
-            <h3>📅 Exam Attempts (Last 14 Days)</h3>
-            <div class="bar-chart" id="daily-chart" style="padding-bottom: 30px;"></div>
-        </div>
-
-        <!-- Exam vs Practice Ratio -->
-        <div class="chart-container">
-            <h3>📊 Exam vs Practice Ratio</h3>
-            <div style="display: flex; justify-content: center; padding: 20px;">
-                <svg width="200" height="200" viewBox="0 0 200 200" id="ratio-chart">
-                    <!-- Will be filled by JS -->
-                </svg>
-            </div>
-            <div style="display: flex; justify-content: center; gap: 20px; font-size: .85rem;">
-                <span style="color: var(--accent);">● Exams: {{ exam_count }}</span>
-                <span style="color: var(--green);">● Practice: {{ practice_count }}</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Topic Accuracy -->
-    <div class="chart-container">
-        <h3>📚 Topic-wise Accuracy</h3>
-        <div class="bar-chart" id="topic-chart" style="padding-bottom: 30px; min-height: 220px;"></div>
-    </div>
-
-    <!-- Top Students -->
-    <div class="card" style="margin-bottom: 20px;">
-        <h3 style="margin-bottom: 16px;">🏆 Top 10 Students by Exam Score</h3>
-        {% if top_students %}
-        <div class="table-responsive">
-            <table class="table-dark">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Student</th>
-                        <th>Email</th>
-                        <th>Branch</th>
-                        <th>Best Score</th>
-                        <th>Attempts</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for s in top_students %}
-                    <tr>
-                        <td class="mono">{{ loop.index }}</td>
-                        <td>{{ s.name }}</td>
-                        <td class="text-muted">{{ s.email }}</td>
-                        <td><span class="badge badge-muted">{{ s.engineering_branch }}</span></td>
-                        <td class="mono text-green">{{ s.best_score }}%</td>
-                        <td class="mono">{{ s.attempt_count }}</td>
-                    </tr>
+    <!-- Filters -->
+    <div class="card" style="margin-bottom: 20px; padding: 16px;">
+        <form method="GET" action="{{ url_for('admin.attempts') }}">
+            <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+                <select name="config_id" class="form-control" style="flex:1; min-width:160px;">
+                    <option value="">All Configs</option>
+                    {% for c in configs %}
+                    <option value="{{ c.id }}" {{ 'selected' if config_filter==c.id|string }}>{{ c.name }}</option>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                </select>
+                <select name="mode" class="form-control" style="flex:1; min-width:130px;">
+                    <option value="">All Modes</option>
+                    <option value="exam" {{ 'selected' if mode_filter=='exam' }}>Exam</option>
+                    <option value="practice" {{ 'selected' if mode_filter=='practice' }}>Practice</option>
+                </select>
+                <input type="text" name="student" class="form-control" placeholder="Student name..."
+                    value="{{ student_filter }}" style="flex:2; min-width:160px;">
+                <button type="submit" class="btn btn-outline btn-sm" style="white-space:nowrap;">🔍 Filter</button>
+                {% if config_filter or mode_filter or student_filter %}
+                <a href="{{ url_for('admin.attempts') }}" class="btn btn-outline btn-sm" style="white-space:nowrap;">✕
+                    Clear</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    {% if attempts %}
+    <style>
+        @media (max-width: 640px) {
+            .col-hide-mobile {
+                display: none !important;
+            }
+
+            .table-dark td,
+            .table-dark th {
+                font-size: 11px;
+                padding: 8px 6px;
+            }
+        }
+    </style>
+    <div class="table-responsive">
+        <table class="table-dark">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th class="col-hide-mobile">Config</th>
+                    <th class="col-hide-mobile">Mode</th>
+                    <th class="col-hide-mobile">Date</th>
+                    <th>Score</th>
+                    <th>%</th>
+                    <th class="col-hide-mobile">Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in attempts %}
+                <tr class="clickable-row"
+                    onclick="window.location.href='{{ url_for('admin.attempt_detail', attempt_id=a.id) }}';">
+                    <td>{{ a.user.name if a.user else 'N/A' }}</td>
+                    <td class="col-hide-mobile">{{ a.config.name if a.config else 'N/A' }}</td>
+                    <td class="col-hide-mobile">
+                        <span class="badge {{ 'badge-exam' if a.mode == 'exam' else 'badge-practice' }}">
+                            {{ '📝' if a.mode == 'exam' else '🎯' }} {{ a.mode|upper }}
+                        </span>
+                    </td>
+                    <td class="mono col-hide-mobile" style="font-size:.8rem;">{{ a.started_at.strftime('%Y-%m-%d %H:%M')
+                        if a.started_at else '' }}</td>
+                    <td class="mono">{{ a.score }}/{{ a.max_score }}</td>
+                    <td class="mono {{ 'text-green' if a.percentage >= 50 else 'text-red' }}">{{ a.percentage }}%</td>
+                    <td class="mono col-hide-mobile" style="font-size:.8rem;">
+                        {% if a.time_taken_sec %}{{ (a.time_taken_sec // 60) }}m {{ a.time_taken_sec % 60 }}s{% else
+                        %}—{% endif %}
+                    </td>
+                    <td>
+                        <span
+                            class="badge {{ 'badge-success' if a.status == 'submitted' else 'badge-warning' if a.status == 'in_progress' else 'badge-muted' }}">
+                            {{ a.status }}
+                        </span>
+                        {% if a.fs_exit_count > 0 or a.tab_switch_count > 0 %}
+                        <span class="violation-badge">🚨 {{ a.fs_exit_count + a.tab_switch_count }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <div class="pagination">
+        {% if pagination.has_prev %}
+        <a
+            href="{{ url_for('admin.attempts', page=pagination.prev_num, config_id=config_filter, mode=mode_filter, student=student_filter) }}">←
+            Prev</a>
+        {% endif %}
+        {% for p in pagination.iter_pages() %}
+        {% if p %}
+        {% if p == pagination.page %}
+        <span class="current">{{ p }}</span>
         {% else %}
-        <p class="text-muted">No exam data yet.</p>
+        <a
+            href="{{ url_for('admin.attempts', page=p, config_id=config_filter, mode=mode_filter, student=student_filter) }}">{{
+            p }}</a>
+        {% endif %}
+        {% else %}
+        <span class="disabled">…</span>
+        {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+        <a
+            href="{{ url_for('admin.attempts', page=pagination.next_num, config_id=config_filter, mode=mode_filter, student=student_filter) }}">Next
+            →</a>
         {% endif %}
     </div>
+    {% endif %}
 
-    <!-- Hardest Questions -->
-    <div class="card">
-        <h3 style="margin-bottom: 16px;">🔥 10 Hardest Questions</h3>
-        {% if hardest %}
-        <div class="table-responsive">
-            <table class="table-dark">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Question</th>
-                        <th>Topic</th>
-                        <th>Correct %</th>
-                        <th>Attempts</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for h in hardest %}
-                    <tr>
-                        <td class="mono">{{ loop.index }}</td>
-                        <td>{{ h.question }}</td>
-                        <td><span class="badge badge-muted">{{ h.topic }}</span></td>
-                        <td class="mono text-red">{{ h.accuracy }}%</td>
-                        <td class="mono">{{ h.attempts }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <p class="text-muted">No attempt data yet.</p>
-        {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <h3>No attempts found</h3>
+        <p>No exam attempts match your filters.</p>
     </div>
+    {% endif %}
 </div>
-
-<script>
-    // Daily chart data
-    const dailyData = {{ daily_data | safe }};
-    const topicData = {{ topic_chart_data | safe }};
-    const examCount = {{ exam_count }};
-    const practiceCount = {{ practice_count }};
-
-    document.addEventListener('DOMContentLoaded', () => {
-        renderDailyChart();
-        renderTopicChart();
-        renderRatioChart();
-    });
-
-    function renderDailyChart() {
-        const container = document.getElementById('daily-chart');
-        if (!container || dailyData.length === 0) return;
-        const max = Math.max(...dailyData.map(d => d.count), 1);
-        container.innerHTML = dailyData.map(d => {
-            const h = Math.max((d.count / max) * 170, 4);
-            return `<div class="bar" style="height:${h}px;">
-            <span class="bar-value">${d.count}</span>
-            <span class="bar-label">${d.date}</span>
-        </div>`;
-        }).join('');
-    }
-
-    function renderTopicChart() {
-        const container = document.getElementById('topic-chart');
-        if (!container || topicData.length === 0) {
-            container.innerHTML = '<p class="text-muted" style="text-align:center;padding:40px;">No data yet</p>';
-            return;
-        }
-        container.innerHTML = topicData.map(d => {
-            const h = Math.max((d.accuracy / 100) * 170, 4);
-            return `<div class="bar" style="height:${h}px;">
-            <span class="bar-value">${d.accuracy}%</span>
-            <span class="bar-label">${d.topic.substring(0, 8)}</span>
-        </div>`;
-        }).join('');
-    }
-
-    function renderRatioChart() {
-        const svg = document.getElementById('ratio-chart');
-        if (!svg) return;
-        const total = examCount + practiceCount;
-        if (total === 0) {
-            svg.innerHTML = '<text x="100" y="105" text-anchor="middle" fill="var(--muted)" font-size="14">No data</text>';
-            return;
-        }
-        const examPct = examCount / total;
-        const cx = 100, cy = 100, r = 80;
-
-        // Draw donut
-        const examAngle = examPct * 2 * Math.PI;
-        const x1 = cx + r * Math.sin(0);
-        const y1 = cy - r * Math.cos(0);
-        const x2 = cx + r * Math.sin(examAngle);
-        const y2 = cy - r * Math.cos(examAngle);
-        const largeArc = examPct > 0.5 ? 1 : 0;
-
-        svg.innerHTML = `
-        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--green)" stroke-width="24"/>
-        ${examCount > 0 ? `<path d="M ${cx} ${cy - r} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}" fill="none" stroke="var(--accent)" stroke-width="24"/>` : ''}
-        <circle cx="${cx}" cy="${cy}" r="${r - 18}" fill="var(--surface)"/>
-        <text x="${cx}" y="${cy - 5}" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="bold" font-family="JetBrains Mono">${total}</text>
-        <text x="${cx}" y="${cy + 15}" text-anchor="middle" fill="var(--muted)" font-size="11">Total</text>
-    `;
-    }
-</script>
 {% endblock %}

@@ -7,146 +7,153 @@
     <meta name="description" content="DDCET - Diploma to Degree Common Entrance Test Portal">
     <title>{% block title %}DDCET Exam Portal{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        .nav-item.active {
+            background: var(--primary, #4f46e5);
+            color: #fff !important;
+            border-radius: 6px;
+        }
+    </style>
     {% block head %}{% endblock %}
 </head>
 
 <body>
     {% block nav %}
     <nav class="nav-light">
-        <div class="nav-header">
-            <a href="/" class="logo">🎓 DDCET Portal</a>
-            {% if current_user.is_authenticated %}
-            <button class="menu-toggle {{ 'admin-only' if current_user.role == 'admin' else 'hide' }}" id="menuToggle"
-                aria-label="Toggle navigation">
-                <div class="hamburger">
-                    <span class="bar"></span>
-                    <span class="bar"></span>
-                    <span class="bar"></span>
-                </div>
-                <span class="menu-text">Menu</span>
-            </button>
-            {% if current_user.role != 'admin' %}
-            <a href="{{ url_for('student.home') }}" class="nav-item-top">🏠 Home</a>
-            {% endif %}
+        <a href="/" class="logo">🎓 DDCET Portal</a>
+
+        {% if current_user.is_authenticated %}
+
+        <!-- Desktop nav links (hidden on mobile) -->
+        <div class="nav-desktop-links">
+            {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin.dashboard') }}" class="nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">🏠 Dashboard</a>
+            <a href="{{ url_for('admin.banks') }}" class="nav-item {% if request.endpoint and 'bank' in request.endpoint %}active{% endif %}">Banks</a>
+            <a href="{{ url_for('admin.configs') }}" class="nav-item {% if request.endpoint and 'config' in request.endpoint %}active{% endif %}">Configs</a>
+            <a href="{{ url_for('admin.attempts') }}" class="nav-item {% if request.endpoint in ['admin.attempts', 'admin.attempt_detail'] %}active{% endif %}">Attempts</a>
+            <a href="{{ url_for('admin.practice_sessions') }}" class="nav-item {% if request.endpoint == 'admin.practice_sessions' %}active{% endif %}">Sessions</a>
+            <a href="{{ url_for('admin.analytics') }}" class="nav-item {% if request.endpoint and 'analytics' in request.endpoint %}active{% endif %}">Analytics</a>
+            <a href="{{ url_for('admin.users') }}" class="nav-item {% if request.endpoint == 'admin.users' %}active{% endif %}">Users</a>
+            {% else %}
+            <a href="{{ url_for('student.home') }}" class="nav-item {% if request.endpoint == 'student.home' %}active{% endif %}">🏠 Home</a>
             {% endif %}
         </div>
 
-        {% if current_user.is_authenticated %}
-        <div class="nav-user-desktop">
-            <div class="user-avatar">{{ current_user.name[0]|upper }}</div>
-            <span class="user-name">{{ current_user.name }}</span>
-            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm">Logout</a>
+        <!-- Desktop user actions (hidden on mobile) -->
+        <div class="nav-desktop-actions">
+            <a href="{{ url_for('auth.profile') }}" class="nav-user-chip">
+                <span class="user-avatar-sm">{{ current_user.name[0]|upper }}</span>
+                <span class="nav-user-name-sm">{{ current_user.name.split()[0] }}</span>
+            </a>
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red);">Logout</a>
         </div>
+
+        <!-- Mobile hamburger (hidden on desktop) -->
+        <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </button>
+
+        <!-- Mobile slide-in drawer -->
+        <div class="nav-container" id="navContainer">
+            <div class="nav-side-menu">
+                <div class="side-menu-header">
+                    <span class="logo">🎓 DDCET</span>
+                    <button class="close-menu" id="closeMenu">&times;</button>
+                </div>
+
+                <div class="nav-user-info">
+                    <div class="user-avatar">{{ current_user.name[0]|upper }}</div>
+                    <div class="user-details">
+                        <span class="user-name">{{ current_user.name }}</span>
+                        <span class="user-role badge badge-muted">{{ current_user.role|upper }}</span>
+                    </div>
+                </div>
+
+                <div class="nav-links">
+                    {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('admin.dashboard') }}" class="nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">🏠 Dashboard</a>
+                    <a href="{{ url_for('admin.banks') }}" class="nav-item {% if request.endpoint and 'bank' in request.endpoint %}active{% endif %}">📚 Banks</a>
+                    <a href="{{ url_for('admin.configs') }}" class="nav-item {% if request.endpoint and 'config' in request.endpoint %}active{% endif %}">⚙️ Configs</a>
+                    <a href="{{ url_for('admin.attempts') }}" class="nav-item {% if request.endpoint in ['admin.attempts', 'admin.attempt_detail'] %}active{% endif %}">📋 Attempts</a>
+                    <a href="{{ url_for('admin.practice_sessions') }}" class="nav-item {% if request.endpoint == 'admin.practice_sessions' %}active{% endif %}">🎯 Sessions</a>
+                    <a href="{{ url_for('admin.analytics') }}" class="nav-item {% if request.endpoint and 'analytics' in request.endpoint %}active{% endif %}">📊 Analytics</a>
+                    <a href="{{ url_for('admin.users') }}" class="nav-item {% if request.endpoint == 'admin.users' %}active{% endif %}">👥 Users</a>
+                    {% else %}
+                    <a href="{{ url_for('student.home') }}" class="nav-item {% if request.endpoint == 'student.home' %}active{% endif %}">🏠 Home</a>
+                    {% endif %}
+                </div>
+
+                <div class="nav-actions">
+                    <a href="{{ url_for('auth.profile') }}" class="btn btn-outline btn-sm w-100" style="margin-bottom:8px;">👤 My Profile</a>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline w-100" style="color:var(--red);border-color:var(--red);">Logout</a>
+                </div>
+            </div>
+            <div class="nav-overlay" id="navOverlay"></div>
+        </div>
+
         {% endif %}
     </nav>
     {% endblock %}
 
-    <div class="page-wrapper">
-        {% if current_user.is_authenticated and current_user.role == 'admin' %}
-        <aside class="sidebar-admin" id="sidebarAdmin">
-            <div class="sidebar-header">
-                <span class="logo">🎓 Admin Panel</span>
-                <button class="close-sidebar" id="closeSidebar">&times;</button>
-            </div>
-
-            <div class="nav-user-mobile">
-                <div class="user-avatar">{{ current_user.name[0]|upper }}</div>
-                <div class="user-details">
-                    <span class="user-name">{{ current_user.name }}</span>
-                    <span class="user-role badge badge-muted">{{ current_user.role|upper }}</span>
-                </div>
-            </div>
-
-            <div class="sidebar-nav">
-                <a href="{{ url_for('admin.dashboard') }}" class="sidebar-item">🏠 Dashboard</a>
-                <a href="{{ url_for('admin.banks') }}" class="sidebar-item">📚 Question Banks</a>
-                <a href="{{ url_for('admin.configs') }}" class="sidebar-item">⚙️ Exam Configs</a>
-                <a href="{{ url_for('admin.attempts') }}" class="sidebar-item">📝 Student Attempts</a>
-                <a href="{{ url_for('admin.practice_sessions') }}" class="sidebar-item">🎯 Practice Sessions</a>
-                <a href="{{ url_for('admin.analytics') }}" class="sidebar-item">📊 Performance Analytics</a>
-                <a href="{{ url_for('admin.users') }}" class="sidebar-item">👥 User Management</a>
-            </div>
-
-            <div class="sidebar-footer">
-                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-logout w-100">Logout</a>
-            </div>
-        </aside>
-        <div class="sidebar-overlay" id="sidebarOverlay"></div>
-        {% endif %}
-
-        <div class="content-area">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            <div class="flash-container">
-                {% for category, message in messages %}
-                <div class="flash flash-{{ category }}">
-                    {% if category == 'success' %}✅{% elif category == 'error' %}❌{% elif category == 'warning' %}⚠️{%
-                    else
-                    %}ℹ️{% endif %}
-                    {{ message }}
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-            {% endwith %}
-
-            <main class="main-body">
-                {% block content %}{% endblock %}
-            </main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container">
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">
+            {% if category == 'success' %}✅{% elif category == 'error' %}❌{% elif category == 'warning' %}⚠️{% else
+            %}ℹ️{% endif %}
+            {{ message }}
         </div>
+        {% endfor %}
     </div>
+    {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
 
     {% block scripts %}
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const menuToggle = document.getElementById('menuToggle');
-            const closeSidebarBtn = document.getElementById('closeSidebar');
-            const sidebarAdmin = document.getElementById('sidebarAdmin');
-            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const closeMenu   = document.getElementById('closeMenu');
+            const navContainer = document.getElementById('navContainer');
+            const navOverlay  = document.getElementById('navOverlay');
 
-            if (menuToggle && sidebarAdmin) {
-                function openSidebar() {
-                    sidebarAdmin.classList.add('active');
-                    if (sidebarOverlay) sidebarOverlay.classList.add('active');
-                    document.body.classList.add('sidebar-open');
-                }
+            if (!navContainer) return;
 
-                function closeSidebar() {
-                    sidebarAdmin.classList.remove('active');
-                    if (sidebarOverlay) sidebarOverlay.classList.remove('active');
-                    document.body.classList.remove('sidebar-open');
-                }
-
-                menuToggle.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (sidebarAdmin.classList.contains('active')) {
-                        closeSidebar();
-                    } else {
-                        openSidebar();
-                    }
-                });
-
-                if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', closeSidebar);
-                if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
-
-                // Close sidebar when a nav link is clicked (on mobile)
-                const sidebarLinks = sidebarAdmin.querySelectorAll('.sidebar-nav a');
-                sidebarLinks.forEach(link => {
-                    link.addEventListener('click', () => {
-                        if (window.innerWidth <= 768) {
-                            closeSidebar();
-                        }
-                    });
-                });
-
-                // Handle window resize
-                window.addEventListener('resize', () => {
-                    if (window.innerWidth > 768) {
-                        closeSidebar();
-                        document.body.classList.remove('sidebar-open');
-                    }
-                });
+            function openMenu() {
+                navContainer.classList.add('active');
+                document.body.style.overflow = 'hidden'; // prevent background scroll
             }
+
+            function closeMenuFn() {
+                navContainer.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            function toggleMenu() {
+                if (navContainer.classList.contains('active')) {
+                    closeMenuFn();
+                } else {
+                    openMenu();
+                }
+            }
+
+            if (menuToggle) menuToggle.addEventListener('click', toggleMenu);
+            if (closeMenu)  closeMenu.addEventListener('click', closeMenuFn);
+            if (navOverlay) navOverlay.addEventListener('click', closeMenuFn);
+
+            // Close menu when a nav link is tapped on mobile
+            navContainer.querySelectorAll('.nav-item').forEach(link => {
+                link.addEventListener('click', closeMenuFn);
+            });
+
+            // Close menu on resize to desktop
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) closeMenuFn();
+            });
         });
     </script>
     {% endblock %}
