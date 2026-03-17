@@ -649,7 +649,7 @@ def analytics():
 
     # Top 10 students
     top_students = db.session.query(
-        User.name, User.email,
+        User.name, User.email, User.engineering_branch,
         db.func.max(TestAttempt.percentage).label('best_score'),
         db.func.count(TestAttempt.id).label('attempt_count')
     ).join(TestAttempt).filter(
@@ -696,6 +696,33 @@ def analytics():
                            practice_count=practice_count,
                            top_students=top_students,
                            hardest=hardest)
+
+
+@admin_bp.route('/analytics/export')
+@login_required
+@admin_required
+def export_analytics():
+    # Export all students' best scores and data
+    students_data = db.session.query(
+        User.name, User.email, User.engineering_branch, User.enrollment_number,
+        db.func.max(TestAttempt.percentage).label('best_score'),
+        db.func.count(TestAttempt.id).label('attempt_count')
+    ).join(TestAttempt).filter(
+        TestAttempt.mode == 'exam',
+        TestAttempt.status.in_(['submitted', 'timeout'])
+    ).group_by(User.id).order_by(db.desc('best_score')).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Name', 'Email', 'Enrollment Number', 'Engineering Branch', 'Best Score (%)', 'Total Attempts'])
+    for s in students_data:
+        writer.writerow([s.name, s.email, s.enrollment_number, s.engineering_branch, s.best_score, s.attempt_count])
+
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename=analytics_student_scores_{datetime.utcnow().strftime("%Y%m%d")}.csv'}
+    )
 
 
 # ── User Management ──────────────────────────────────────

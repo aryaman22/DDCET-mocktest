@@ -45,7 +45,17 @@ urllib.request.urlopen(f'{BASE_URL}/admin/banks/create', data=bank_data)
 # Find the bank ID
 resp = urllib.request.urlopen(f'{BASE_URL}/admin/banks')
 html = resp.read().decode('utf-8')
-bank_id = html.split('/admin/banks/')[1].split('/questions')[0]
+try:
+    # Look for the bank name first to avoid catching the "Create Bank" button
+    bank_id = html.split('Test Excel Bank')[1].split('/admin/banks/')[1].split('/questions')[0]
+except (IndexError, ValueError):
+    # Fallback to older method but skip 'create'
+    parts = html.split('/admin/banks/')
+    for part in parts[1:]:
+        bid = part.split('/questions')[0]
+        if bid != 'create':
+            bank_id = bid
+            break
 print(f"Created bank with ID: {bank_id}")
 
 # Upload Excel file
