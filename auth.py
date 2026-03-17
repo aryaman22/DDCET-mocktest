@@ -1,8 +1,11 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
-from models import db, User
+from models import db, User, TestAttempt, ExamConfig, Question
+from utils import calculate_exam_score
+from datetime import datetime, timezone
 import bcrypt as bc
 import secrets
+import json
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
 
@@ -127,6 +130,66 @@ def register():
 @auth_bp.route('/logout')
 @login_required
 def logout():
+    # Auto-submit any in-progress exam attempts
+    in_progress = TestAttempt.query.filter_by(
+        user_id=current_user.id,
+        status='in_progress',
+        mode='exam'
+    ).all()
+
+    for attempt in in_progress:
+        config = ExamConfig.query.get(attempt.config_id)
+        q_data = json.loads(attempt.questions_json) if attempt.questions_json else []
+        q_ids = [qd['q_id'] for qd in q_data]
+        questions_from_db = Question.query.filter(Question.id.in_(q_ids)).all()
+        questions_map = {q.id: q for q in questions_from_db}
+
+        # Build answers dict for scoring
+        user_answers = {}
+        questions_for_scoring = []
+        for qd in q_data:
+            q = questions_map.get(qd['q_id'])
+            if q:
+                questions_for_scoring.append(q)
+                if qd.get('given_answer'):
+                    user_answers[str(q.id)] = qd['given_answer']
+
+        if config:
+            result = calculate_exam_score(questions_for_scoring, user_answers, config)
+
+            # Update marks in q_data
+            for qd in q_data:
+                q = questions_map.get(qd['q_id'])
+                if q:
+                    given = user_answers.get(str(q.id), 'E')
+                    if q.correct_ans == 'X':
+                        qd['marks'] = config.marks_correct
+                    elif given in ['E', '', 'SKIP']:
+                        qd['marks'] = 0
+                    elif given == q.correct_ans:
+                        qd['marks'] = config.marks_correct
+                    else:
+                        qd['marks'] = -config.marks_wrong
+
+            attempt.questions_json = json.dumps(q_data)
+            attempt.score = result['marks']
+            attempt.max_score = result['max_score']
+            attempt.percentage = result['percentage']
+            attempt.correct_count = result['correct']
+            attempt.wrong_count = result['wrong']
+            attempt.unattempted = result['unattempted']
+            attempt.bonus_count = result['bonus']
+
+        attempt.status = 'timeout'
+        attempt.submitted_at = datetime.now(timezone.utc)
+        if attempt.started_at:
+            attempt.time_taken_sec = int((datetime.now(timezone.utc) - attempt.started_at).total_seconds())
+
+    if in_progress:
+        db.session.commit()
+        flash('Your in-progress exam has been auto-submitted.', 'warning')
+
     logout_user()
     flash('Logged out successfully.', 'success')
     return redirect(url_for('auth.login'))
+

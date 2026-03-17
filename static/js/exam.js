@@ -59,13 +59,10 @@ function showFsSplash() {
 
 function startExamFullscreen() {
     enterFullscreen().then(() => {
-        const splash = document.getElementById('fs-splash');
-        if (splash) splash.remove();
+        // Splash will be removed by handleFsChange when fullscreen is confirmed
     }).catch(() => {
-        // Some browsers block fullscreen - try again on click
-        const splash = document.getElementById('fs-splash');
-        if (splash) splash.remove();
-        alert('Please allow fullscreen mode for the exam.');
+        // Don't remove splash - keep blocking until fullscreen succeeds
+        alert('Fullscreen is required for this exam. Please allow fullscreen mode and try again.');
     });
 }
 
@@ -80,6 +77,9 @@ function handleFsChange() {
         showFsBlockingModal(fsExitCount);
         logViolation('fullscreen_exit', fsExitCount);
     } else if (isInFullscreen()) {
+        // Remove splash screen if present
+        const splash = document.getElementById('fs-splash');
+        if (splash) splash.remove();
         removeFsBlockingModal();
         if (!examStarted) {
             examStarted = true;
@@ -153,13 +153,55 @@ document.addEventListener('keydown', e => {
     if (e.ctrlKey && e.shiftKey && e.key === 'I') e.preventDefault();
 });
 
+// ── Beforeunload Warning ──────────────────────
+window.addEventListener('beforeunload', (e) => {
+    if (examStarted) {
+        e.preventDefault();
+        e.returnValue = 'You have an exam in progress. Your exam will be auto-submitted if you leave.';
+        return e.returnValue;
+    }
+});
+
+// ── Logout Handler (submit exam first) ────────
+document.addEventListener('DOMContentLoaded', () => {
+    const logoutLinks = document.querySelectorAll('a[href*="/auth/logout"]');
+    logoutLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            if (!examStarted) return; // Let normal logout happen
+            e.preventDefault();
+            const logoutUrl = link.href;
+
+            if (!confirm('Logging out will auto-submit your exam. Are you sure?')) return;
+
+            // Submit exam then logout
+            clearInterval(timerInterval);
+            clearInterval(autoSaveInterval);
+
+            fetch(`/student/exam/${ATTEMPT_ID}/submit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answers })
+            }).then(() => {
+                localStorage.removeItem(`exam_start_${ATTEMPT_ID}`);
+                window.removeEventListener('beforeunload', () => { });
+                window.onbeforeunload = null;
+                window.location.href = logoutUrl;
+            }).catch(() => {
+                // Even if submit fails, logout (server-side will auto-submit)
+                window.onbeforeunload = null;
+                window.location.href = logoutUrl;
+            });
+        });
+    });
+});
+
 // ── Violation Log ─────────────────────────────
 function logViolation(event, count) {
     fetch(`/student/exam/${ATTEMPT_ID}/log`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ event, count })
-    }).catch(() => {});
+    }).catch(() => { });
 }
 
 // ── Timer ─────────────────────────────────────
@@ -222,7 +264,7 @@ function saveAnswers() {
             const saveStatus = document.getElementById('save-status');
             if (saveStatus) saveStatus.textContent = `Saved: ${d.saved_at}`;
         }
-    }).catch(() => {});
+    }).catch(() => { });
 }
 
 // ── Question Rendering ────────────────────────
@@ -248,13 +290,13 @@ function renderQuestion(idx) {
         <div class="question-text">${q.question}</div>
         <div class="options-list">
             ${['A', 'B', 'C', 'D'].map(opt => {
-                const optKey = `option_${opt.toLowerCase()}`;
-                const isSelected = selectedAns === opt;
-                return `<button class="option-btn ${isSelected ? 'selected' : ''}" onclick="selectOption('${qId}', '${opt}')">
+        const optKey = `option_${opt.toLowerCase()}`;
+        const isSelected = selectedAns === opt;
+        return `<button class="option-btn ${isSelected ? 'selected' : ''}" onclick="selectOption('${qId}', '${opt}')">
                     <span class="option-label">${opt}</span>
                     <span class="option-text">${q[optKey]}</span>
                 </button>`;
-            }).join('')}
+    }).join('')}
         </div>
         <div class="question-actions">
             <div class="btn-group">

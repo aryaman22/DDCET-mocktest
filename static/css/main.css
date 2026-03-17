@@ -40,6 +40,13 @@ body {
     line-height: 1.6;
 }
 
+body.menu-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+
 a {
     color: var(--accent);
     text-decoration: none;
@@ -75,64 +82,87 @@ h6 {
 
 .page-wrapper {
     display: flex;
-    min-height: 100vh;
+    min-height: calc(100vh - 70px);
 }
 
-.main-content {
+.content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    /* Prevent flex items from overflowing */
+}
+
+.main-content,
+.main-body {
     flex: 1;
     padding: 30px;
-    overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+
+    .main-content,
+    .main-body {
+        padding: 20px 15px;
+        min-height: calc(100vh - 60px);
+    }
 }
 
 /* ── Navigation ────────────────────────── */
 .nav-light {
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--surface);
     border-bottom: 1px solid var(--border);
-    padding: 12px 30px;
+    padding: 0 40px;
+    height: 70px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     position: sticky;
     top: 0;
-    z-index: 100;
-    backdrop-filter: blur(10px);
+    z-index: 1000;
+    /* Sidebar will be higher on mobile */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.nav-light .logo {
-    font-size: 1.4rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+@media (min-width: 769px) {
+    .nav-light {
+        position: fixed;
+        /* Keep nav fixed on desktop */
+        width: 100%;
+    }
+
+    .page-wrapper {
+        margin-top: 70px;
+        /* Offset for fixed nav */
+    }
 }
 
-.nav-light .nav-links {
+.nav-header {
     display: flex;
     align-items: center;
     gap: 20px;
 }
 
-.nav-light .nav-links a {
-    color: var(--muted);
-    font-size: .9rem;
-    font-weight: 500;
-    transition: var(--transition);
-}
-
-.nav-light .nav-links a:hover {
-    color: var(--accent);
-}
-
-.nav-light .nav-links a.active {
-    color: var(--accent);
-    font-weight: 600;
-}
-
-.nav-container {
+.nav-user-desktop {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 15px;
+}
+
+@media (max-width: 768px) {
+    .nav-light {
+        padding: 0 20px;
+        height: 60px;
+    }
+
+    .nav-user-desktop {
+        display: none;
+    }
+
+    .nav-header {
+        width: 100%;
+        justify-content: space-between;
+    }
 }
 
 .nav-side-menu {
@@ -169,55 +199,128 @@ h6 {
 
 /* ── Sidebar (Admin) ───────────────────── */
 .sidebar-admin {
-    width: 250px;
+    width: 280px;
     background: var(--surface);
     border-right: 1px solid var(--border);
-    min-height: 100vh;
-    padding: 20px 0;
+    height: calc(100vh - 70px);
     position: sticky;
-    top: 0;
+    top: 70px;
+    display: flex;
+    flex-direction: column;
+    z-index: 900;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.sidebar-header {
+    display: none;
+    /* Only mobile */
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 20px 0;
     overflow-y: auto;
 }
 
-.sidebar-admin .sidebar-header {
-    padding: 0 20px 20px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 15px;
-}
-
-.sidebar-admin .sidebar-header h3 {
-    font-size: 1.1rem;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.sidebar-admin .sidebar-nav {
-    list-style: none;
-}
-
-.sidebar-admin .sidebar-nav li a {
+.sidebar-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 20px;
+    gap: 12px;
+    padding: 12px 24px;
     color: var(--muted);
-    font-size: .9rem;
+    font-size: 0.95rem;
+    font-weight: 500;
     transition: var(--transition);
-    border-left: 3px solid transparent;
+    border-left: 4px solid transparent;
 }
 
-.sidebar-admin .sidebar-nav li a:hover {
+.sidebar-item:hover {
     background: var(--surface2);
-    color: var(--text);
-    border-left-color: var(--accent);
+    color: var(--accent);
+    border-left-color: var(--accent2);
 }
 
-.sidebar-admin .sidebar-nav li a.active {
-    background: rgba(231, 111, 81, .08);
+.sidebar-item.active {
+    background: rgba(231, 111, 81, 0.08);
     color: var(--accent);
     border-left-color: var(--accent);
+}
+
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.nav-user-mobile {
+    display: none;
+    /* Only mobile */
+}
+
+.sidebar-overlay {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .sidebar-admin {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 280px;
+        z-index: 3000;
+        transform: translateX(-100%);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-admin.active {
+        transform: translateX(0);
+    }
+
+    .sidebar-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .close-sidebar {
+        background: none;
+        border: none;
+        font-size: 1.8rem;
+        cursor: pointer;
+        color: var(--muted);
+    }
+
+    .nav-user-mobile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 20px;
+        background: var(--surface2);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-overlay {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(2px);
+        z-index: 2900;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s;
+    }
+
+    .sidebar-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
 }
 
 /* ── Cards ─────────────────────────────── */
@@ -540,7 +643,7 @@ select.form-control {
 
 /* ── Flash Messages ────────────────────── */
 .flash-container {
-    padding: 0 30px;
+    padding: 20px 30px 0 30px;
 }
 
 .flash {
@@ -1746,7 +1849,17 @@ select.form-control {
 /* ── Responsive ────────────────────────── */
 @media (max-width: 768px) {
     .sidebar-admin {
-        display: none;
+        display: none !important;
+    }
+
+    .nav-light {
+        padding: 8px 16px;
+        height: 60px;
+    }
+
+    .nav-light .logo {
+        font-size: 1.1rem;
+        white-space: nowrap;
     }
 
     .exam-container {
@@ -1754,20 +1867,26 @@ select.form-control {
     }
 
     .exam-sidebar {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        max-height: 250px;
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: space-around;
-        border-top: 1px solid var(--border);
+        width: 100%;
+        height: auto;
+        max-height: none;
+        overflow-y: auto;
         border-left: none;
-        z-index: 50;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        box-shadow: 0 -4px 15px rgba(0, 0, 0, .05);
+        border-bottom: 2px solid var(--border);
+        padding: 16px;
+        order: 1;
+        position: sticky;
+        top: 0;
+        background: var(--surface);
+        z-index: 10;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        flex-direction: column;
+    }
+
+    .exam-question-panel {
+        padding: 20px 16px;
+        max-height: none;
+        order: 2;
     }
 
     .form-row {
@@ -1809,21 +1928,64 @@ select.form-control {
     }
 
     .menu-toggle {
+        align-items: center;
+        gap: 8px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        padding: 6px 12px;
+        z-index: 1001;
+        transition: var(--transition);
+        height: 38px;
+    }
+
+    .menu-toggle:hover {
+        border-color: var(--accent);
+        background: var(--surface);
+    }
+
+    .menu-toggle.admin-only {
+        display: flex;
+    }
+
+    .menu-toggle.hide {
+        display: none !important;
+    }
+
+    .nav-item-top {
+        color: var(--text);
+        font-weight: 500;
+        font-size: 0.9rem;
+        padding: 6px 12px;
+        border-radius: 8px;
+        transition: var(--transition);
+    }
+
+    .nav-item-top:hover {
+        background: var(--surface2);
+        color: var(--accent);
+    }
+
+    .menu-toggle .hamburger {
         display: flex;
         flex-direction: column;
-        gap: 4px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 5px;
-        z-index: 1001;
+        gap: 3px;
     }
 
     .menu-toggle .bar {
-        width: 22px;
+        width: 18px;
         height: 2px;
         background-color: var(--text);
         transition: var(--transition);
+    }
+
+    .menu-toggle .menu-text {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .nav-container {
@@ -1832,11 +1994,11 @@ select.form-control {
         left: 0;
         width: 100%;
         height: 100%;
-        z-index: 1000;
+        z-index: 2000;
+        /* Increased to be above everything */
         visibility: hidden;
         transition: visibility 0.3s;
         display: block;
-        /* Override flex */
     }
 
     .nav-container.active {
@@ -2004,34 +2166,17 @@ select.form-control {
     }
 
     /* Exam Layout Responsiveness */
-    .exam-container {
-        grid-template-columns: 1fr !important;
-        height: auto;
-        overflow-y: visible;
+    .exam-nav {
+        padding: 10px 16px;
+        gap: 8px;
     }
 
-    .exam-question-panel {
-        padding: 20px 16px;
-        max-height: none;
-        order: 2;
-        /* Content after sidebar if needed, or before */
-    }
-
-    .exam-sidebar {
-        width: 100% !important;
-        height: auto !important;
-        max-height: 400px;
-        overflow-y: auto;
-        border-left: none !important;
-        border-bottom: 2px solid var(--border);
-        padding: 16px !important;
-        order: 1;
-        /* Sidebar at top for timer/palette visibility */
-        position: sticky;
-        top: 0;
-        background: var(--surface);
-        z-index: 10;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    .exam-nav .exam-title {
+        font-size: 0.9rem;
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .exam-sidebar .timer-box {
@@ -2094,14 +2239,11 @@ select.form-control {
     /* Exam and Practice responsiveness */
     .exam-nav {
         padding: 10px 16px;
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        height: auto;
-        gap: 8px;
+        gap: 6px;
     }
 
     .exam-nav .exam-title {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
     }
 
     .practice-header {
