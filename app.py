@@ -10,7 +10,7 @@ def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'ddcet-change-this-in-production')
     
-    db_uri = os.getenv('SQLALCHEMY_DATABASE_URI', 'sqlite:///ddcet.db')
+    db_uri = os.getenv('DATABASE_URL', 'sqlite:///ddcet.db')
     if db_uri.startswith("postgres://"):
         db_uri = db_uri.replace("postgres://", "postgresql://", 1)
         
