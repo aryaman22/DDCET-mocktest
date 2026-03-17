@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from models import db, User, QuestionBank, Question, ExamConfig, TestAttempt, PracticeSession, AdminLog
 from utils import select_questions_for_config, calculate_exam_score
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 
 student_bp = Blueprint('student', __name__, template_folder='templates')
@@ -143,8 +143,15 @@ def start_exam(config_id):
     ).first()
 
     if existing:
-        # Resume
-        return _render_exam(existing, config)
+        # Requirement: "quies can't resume once it exit"
+        # If user hits start_exam while an attempt is already in_progress, 
+        # it means they exited the exam screen and are trying to re-enter.
+        # We auto-submit the existing attempt.
+        existing.status = 'timeout'
+        existing.submitted_at = datetime.now(timezone.utc)
+        db.session.commit()
+        flash('Exam cannot be resumed once exited. Your attempt has been submitted.', 'warning')
+        return redirect(url_for('student.result', attempt_id=existing.id))
 
     # Check if already completed
     completed = TestAttempt.query.filter_by(
@@ -170,7 +177,7 @@ def start_exam(config_id):
         user_id=current_user.id,
         config_id=config_id,
         mode='exam',
-        started_at=datetime.utcnow(),
+        started_at=datetime.now(timezone.utc),
         status='in_progress',
         max_score=len(questions) * config.marks_correct,
         questions_json=json.dumps(q_json)
@@ -246,7 +253,7 @@ def save_exam(attempt_id):
     attempt.questions_json = json.dumps(q_data)
     db.session.commit()
 
-    return jsonify({'ok': True, 'saved_at': datetime.utcnow().strftime('%H:%M:%S')})
+    return jsonify({'ok': True, 'saved_at': datetime.now(timezone.utc).strftime('%H:%M:%S')})
 
 
 @student_bp.route('/exam/<int:attempt_id>/submit', methods=['POST'])
@@ -302,7 +309,7 @@ def submit_exam(attempt_id):
                 qd['marks'] = -config.marks_wrong
 
     attempt.questions_json = json.dumps(q_data)
-    attempt.submitted_at = datetime.utcnow()
+    attempt.submitted_at = datetime.now(timezone.utc)
     attempt.status = 'submitted'
     attempt.score = result['marks']
     attempt.max_score = result['max_score']
@@ -314,7 +321,7 @@ def submit_exam(attempt_id):
 
     # Calculate time taken
     if attempt.started_at:
-        attempt.time_taken_sec = int((datetime.utcnow() - attempt.started_at).total_seconds())
+        attempt.time_taken_sec = int((datetime.now(timezone.utc) - attempt.started_at).total_seconds())
 
     db.session.commit()
 
@@ -428,8 +435,8 @@ def start_practice(config_id):
     session = PracticeSession(
         user_id=current_user.id,
         config_id=config_id,
-        started_at=datetime.utcnow(),
-        last_active_at=datetime.utcnow(),
+        started_at=datetime.now(timezone.utc),
+        last_active_at=datetime.now(timezone.utc),
         questions_seen=json.dumps([q.id for q in questions]),
         status='active'
     )
@@ -502,7 +509,7 @@ def practice_answer(session_id):
             practice.total_answered += 1
             if given_answer.upper() == q.correct_ans or q.correct_ans == 'X':
                 practice.total_correct += 1
-            practice.last_active_at = datetime.utcnow()
+            practice.last_active_at = datetime.now(timezone.utc)
             db.session.commit()
             return jsonify({'ok': True, 'correct': given_answer.upper() == q.correct_ans or q.correct_ans == 'X'})
 
@@ -518,7 +525,7 @@ def finish_practice(session_id):
         return jsonify({'ok': False}), 403
 
     practice.status = 'completed'
-    practice.last_active_at = datetime.utcnow()
+    practice.last_active_at = datetime.now(timezone.utc)
     db.session.commit()
 
     return jsonify({'ok': True, 'redirect': url_for('student.practice_result', session_id=session_id)})

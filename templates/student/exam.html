@@ -14,8 +14,10 @@
         <span class="exam-title">🎓 DDCET Exam Portal · {{ config.name }}</span>
         <div class="d-flex align-center gap-2">
             <span class="exam-live">LIVE</span>
-            <span id="nav-progress" class="mono" style="color:var(--muted);font-size:.85rem;">Q1/{{
+            <span id="nav-progress" class="mono" style="color:var(--muted);font-size:.85rem; margin-right: 10px;">Q1/{{
                 attempt.questions_json|length }}</span>
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm"
+                style="color: var(--red); border-color: var(--red);">Logout</a>
         </div>
     </div>
     {% endblock %}

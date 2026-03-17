@@ -35,9 +35,10 @@
             <!-- Rendered by practice.js -->
         </div>
 
-        <div style="text-align: center; margin-top: 24px;">
+        <div style="text-align: center; margin-top: 24px; display: flex; justify-content: center; gap: 10px;">
             <button class="btn btn-danger" onclick="finishPractice()">🏁 Finish Practice</button>
-            <a href="{{ url_for('student.home') }}" class="btn btn-outline" style="margin-left: 10px;">🏠 Home</a>
+            <a href="{{ url_for('student.home') }}" class="btn btn-outline">🏠 Home</a>
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">Logout</a>
         </div>
     </div>
 

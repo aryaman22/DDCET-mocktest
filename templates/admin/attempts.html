@@ -34,51 +34,54 @@
     </div>
 
     {% if attempts %}
-    <table class="table-dark">
-        <thead>
-            <tr>
-                <th>Student</th>
-                <th>Config</th>
-                <th>Mode</th>
-                <th>Date</th>
-                <th>Score</th>
-                <th>%</th>
-                <th>Time</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for a in attempts %}
-            <tr class="clickable-row"
-                onclick="window.location='{{ url_for('admin.attempt_detail', attempt_id=a.id) }}'">
-                <td>{{ a.user.name if a.user else 'N/A' }}</td>
-                <td>{{ a.config.name if a.config else 'N/A' }}</td>
-                <td>
-                    <span class="badge {{ 'badge-exam' if a.mode == 'exam' else 'badge-practice' }}">
-                        {{ '📝' if a.mode == 'exam' else '🎯' }} {{ a.mode|upper }}
-                    </span>
-                </td>
-                <td class="mono" style="font-size:.8rem;">{{ a.started_at.strftime('%Y-%m-%d %H:%M') if a.started_at
-                    else '' }}</td>
-                <td class="mono">{{ a.score }}/{{ a.max_score }}</td>
-                <td class="mono {{ 'text-green' if a.percentage >= 50 else 'text-red' }}">{{ a.percentage }}%</td>
-                <td class="mono" style="font-size:.8rem;">
-                    {% if a.time_taken_sec %}{{ (a.time_taken_sec // 60) }}m {{ a.time_taken_sec % 60 }}s{% else %}—{%
-                    endif %}
-                </td>
-                <td>
-                    <span
-                        class="badge {{ 'badge-success' if a.status == 'submitted' else 'badge-warning' if a.status == 'in_progress' else 'badge-muted' }}">
-                        {{ a.status }}
-                    </span>
-                    {% if a.fs_exit_count > 0 or a.tab_switch_count > 0 %}
-                    <span class="violation-badge">🚨 {{ a.fs_exit_count + a.tab_switch_count }}</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table-dark">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Config</th>
+                    <th>Mode</th>
+                    <th>Date</th>
+                    <th>Score</th>
+                    <th>%</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in attempts %}
+                <tr class="clickable-row"
+                    onclick="window.location.href='{{ url_for('admin.attempt_detail', attempt_id=a.id) }}';">
+                    <td>{{ a.user.name if a.user else 'N/A' }}</td>
+                    <td>{{ a.config.name if a.config else 'N/A' }}</td>
+                    <td>
+                        <span class="badge {{ 'badge-exam' if a.mode == 'exam' else 'badge-practice' }}">
+                            {{ '📝' if a.mode == 'exam' else '🎯' }} {{ a.mode|upper }}
+                        </span>
+                    </td>
+                    <td class="mono" style="font-size:.8rem;">{{ a.started_at.strftime('%Y-%m-%d %H:%M') if a.started_at
+                        else '' }}</td>
+                    <td class="mono">{{ a.score }}/{{ a.max_score }}</td>
+                    <td class="mono {{ 'text-green' if a.percentage >= 50 else 'text-red' }}">{{ a.percentage }}%</td>
+                    <td class="mono" style="font-size:.8rem;">
+                        {% if a.time_taken_sec %}{{ (a.time_taken_sec // 60) }}m {{ a.time_taken_sec % 60 }}s{% else
+                        %}—{%
+                        endif %}
+                    </td>
+                    <td>
+                        <span
+                            class="badge {{ 'badge-success' if a.status == 'submitted' else 'badge-warning' if a.status == 'in_progress' else 'badge-muted' }}">
+                            {{ a.status }}
+                        </span>
+                        {% if a.fs_exit_count > 0 or a.tab_switch_count > 0 %}
+                        <span class="violation-badge">🚨 {{ a.fs_exit_count + a.tab_switch_count }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
     {% if pagination.pages > 1 %}
     <div class="pagination">

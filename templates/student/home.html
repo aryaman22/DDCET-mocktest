@@ -34,8 +34,8 @@
                     <a href="{{ url_for('student.result', attempt_id=item.attempt_id) }}"
                         class="btn btn-success btn-sm">✓ Completed — View Result</a>
                     {% elif item.status == 'in_progress' %}
-                    <a href="{{ url_for('student.start_exam', config_id=item.config.id) }}"
-                        class="btn btn-warning btn-sm">▶ Resume Exam</a>
+                    <a href="{{ url_for('student.result', attempt_id=item.attempt_id) }}"
+                        class="btn btn-warning btn-sm">⚠ Attempted (In Progress)</a>
                     {% else %}
                     <a href="{{ url_for('student.exam_instructions', config_id=item.config.id) }}"
                         class="btn btn-primary btn-sm">▶ Start Exam</a>
@@ -91,39 +91,44 @@
         <div class="home-section-header">
             <h2>📊 My History</h2>
         </div>
-        <table class="table-dark">
-            <thead>
-                <tr>
-                    <th>Exam</th>
-                    <th>Date</th>
-                    <th>Score</th>
-                    <th>%</th>
-                    <th>Status</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for a in history %}
-                <tr>
-                    <td>{{ a.config.name if a.config else 'N/A' }}</td>
-                    <td class="mono" style="font-size:.8rem;">{{ a.started_at.strftime('%Y-%m-%d %H:%M') if a.started_at
-                        else '' }}</td>
-                    <td class="mono">{{ a.score }}/{{ a.max_score }}</td>
-                    <td class="mono {{ 'text-green' if a.percentage >= 50 else 'text-red' }}">{{ a.percentage }}%</td>
-                    <td>
-                        <span class="badge {{ 'badge-success' if a.status == 'submitted' else 'badge-warning' }}">{{
-                            a.status }}</span>
-                    </td>
-                    <td>
-                        {% if a.status in ['submitted', 'timeout'] %}
-                        <a href="{{ url_for('student.result', attempt_id=a.id) }}" class="btn btn-outline btn-sm">View
-                            Result</a>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table-dark">
+                <thead>
+                    <tr>
+                        <th>Exam</th>
+                        <th>Date</th>
+                        <th>Score</th>
+                        <th>%</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in history %}
+                    <tr>
+                        <td>{{ a.config.name if a.config else 'N/A' }}</td>
+                        <td class="mono" style="font-size:.8rem;">{{ a.started_at.strftime('%Y-%m-%d %H:%M') if
+                            a.started_at
+                            else '' }}</td>
+                        <td class="mono">{{ a.score }}/{{ a.max_score }}</td>
+                        <td class="mono {{ 'text-green' if a.percentage >= 50 else 'text-red' }}">{{ a.percentage }}%
+                        </td>
+                        <td>
+                            <span class="badge {{ 'badge-success' if a.status == 'submitted' else 'badge-warning' }}">{{
+                                a.status }}</span>
+                        </td>
+                        <td>
+                            {% if a.status in ['submitted', 'timeout'] %}
+                            <a href="{{ url_for('student.result', attempt_id=a.id) }}"
+                                class="btn btn-outline btn-sm">View
+                                Result</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
     {% endif %}
 </div>

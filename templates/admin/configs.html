@@ -14,45 +14,47 @@
 
     <div id="tab-exam" class="tab-content active">
         {% if exam_configs %}
-        <table class="table-dark">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Mode</th>
-                    <th>Banks</th>
-                    <th>Questions</th>
-                    <th>Duration</th>
-                    <th>Marks</th>
-                    <th>Active</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for c in exam_configs %}
-                <tr>
-                    <td><strong>{{ c.name }}</strong></td>
-                    <td><span class="badge badge-exam">📝 EXAM</span></td>
-                    <td class="mono" style="font-size:.8rem;">{{ c.bank_ids }}</td>
-                    <td class="mono">{{ c.total_questions }}</td>
-                    <td class="mono">{{ c.duration_minutes }} min</td>
-                    <td class="mono" style="font-size:.8rem;">+{{ c.marks_correct }}/−{{ c.marks_wrong }}</td>
-                    <td><span class="badge {{ 'badge-success' if c.is_active else 'badge-danger' }}">{{ '✅' if
-                            c.is_active else '❌' }}</span></td>
-                    <td>
-                        <div class="btn-group">
-                            <a href="{{ url_for('admin.edit_config', config_id=c.id) }}"
-                                class="btn btn-outline btn-sm">✏️</a>
-                            <form action="{{ url_for('admin.delete_config', config_id=c.id) }}" method="POST"
-                                style="display:inline;" class="delete-form">
-                                <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
-                                <button type="submit" class="btn btn-danger btn-sm">🗑</button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table-dark">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Mode</th>
+                        <th>Banks</th>
+                        <th>Questions</th>
+                        <th>Duration</th>
+                        <th>Marks</th>
+                        <th>Active</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in exam_configs %}
+                    <tr>
+                        <td><strong>{{ c.name }}</strong></td>
+                        <td><span class="badge badge-exam">📝 EXAM</span></td>
+                        <td class="mono" style="font-size:.8rem;">{{ c.bank_ids }}</td>
+                        <td class="mono">{{ c.total_questions }}</td>
+                        <td class="mono">{{ c.duration_minutes }} min</td>
+                        <td class="mono" style="font-size:.8rem;">+{{ c.marks_correct }}/−{{ c.marks_wrong }}</td>
+                        <td><span class="badge {{ 'badge-success' if c.is_active else 'badge-danger' }}">{{ '✅' if
+                                c.is_active else '❌' }}</span></td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('admin.edit_config', config_id=c.id) }}"
+                                    class="btn btn-outline btn-sm">✏️</a>
+                                <form action="{{ url_for('admin.delete_config', config_id=c.id) }}" method="POST"
+                                    style="display:inline;" class="delete-form">
+                                    <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+                                    <button type="submit" class="btn btn-danger btn-sm">🗑</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <div class="empty-state">
             <div class="empty-icon">📝</div>
@@ -64,43 +66,45 @@
 
     <div id="tab-practice" class="tab-content">
         {% if practice_configs %}
-        <table class="table-dark">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Mode</th>
-                    <th>Banks</th>
-                    <th>Questions</th>
-                    <th>Duration</th>
-                    <th>Active</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for c in practice_configs %}
-                <tr>
-                    <td><strong>{{ c.name }}</strong></td>
-                    <td><span class="badge badge-practice">🎯 PRACTICE</span></td>
-                    <td class="mono" style="font-size:.8rem;">{{ c.bank_ids }}</td>
-                    <td class="mono">{{ c.total_questions }}</td>
-                    <td class="text-muted">Unlimited</td>
-                    <td><span class="badge {{ 'badge-success' if c.is_active else 'badge-danger' }}">{{ '✅' if
-                            c.is_active else '❌' }}</span></td>
-                    <td>
-                        <div class="btn-group">
-                            <a href="{{ url_for('admin.edit_config', config_id=c.id) }}"
-                                class="btn btn-outline btn-sm">✏️</a>
-                            <form action="{{ url_for('admin.delete_config', config_id=c.id) }}" method="POST"
-                                style="display:inline;" class="delete-form">
-                                <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
-                                <button type="submit" class="btn btn-danger btn-sm">🗑</button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table-dark">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Mode</th>
+                        <th>Banks</th>
+                        <th>Questions</th>
+                        <th>Duration</th>
+                        <th>Active</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in practice_configs %}
+                    <tr>
+                        <td><strong>{{ c.name }}</strong></td>
+                        <td><span class="badge badge-practice">🎯 PRACTICE</span></td>
+                        <td class="mono" style="font-size:.8rem;">{{ c.bank_ids }}</td>
+                        <td class="mono">{{ c.total_questions }}</td>
+                        <td class="text-muted">Unlimited</td>
+                        <td><span class="badge {{ 'badge-success' if c.is_active else 'badge-danger' }}">{{ '✅' if
+                                c.is_active else '❌' }}</span></td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('admin.edit_config', config_id=c.id) }}"
+                                    class="btn btn-outline btn-sm">✏️</a>
+                                <form action="{{ url_for('admin.delete_config', config_id=c.id) }}" method="POST"
+                                    style="display:inline;" class="delete-form">
+                                    <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+                                    <button type="submit" class="btn btn-danger btn-sm">🗑</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <div class="empty-state">
             <div class="empty-icon">🎯</div>

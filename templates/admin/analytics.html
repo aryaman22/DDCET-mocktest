@@ -4,8 +4,14 @@
 <div class="main-content">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
         <h1 style="margin-bottom: 0;">📊 Analytics</h1>
-        <a href="{{ url_for('admin.export_analytics') }}" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <a href="{{ url_for('admin.export_analytics') }}" class="btn btn-primary"
+            style="display: flex; align-items: center; gap: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
             Export Data
         </a>
     </div>
@@ -70,30 +76,32 @@
     <div class="card" style="margin-bottom: 20px;">
         <h3 style="margin-bottom: 16px;">🏆 Top 10 Students by Exam Score</h3>
         {% if top_students %}
-        <table class="table-dark">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Student</th>
-                    <th>Email</th>
-                    <th>Branch</th>
-                    <th>Best Score</th>
-                    <th>Attempts</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for s in top_students %}
-                <tr>
-                    <td class="mono">{{ loop.index }}</td>
-                    <td>{{ s.name }}</td>
-                    <td class="text-muted">{{ s.email }}</td>
-                    <td><span class="badge badge-muted">{{ s.engineering_branch }}</span></td>
-                    <td class="mono text-green">{{ s.best_score }}%</td>
-                    <td class="mono">{{ s.attempt_count }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table-dark">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Student</th>
+                        <th>Email</th>
+                        <th>Branch</th>
+                        <th>Best Score</th>
+                        <th>Attempts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in top_students %}
+                    <tr>
+                        <td class="mono">{{ loop.index }}</td>
+                        <td>{{ s.name }}</td>
+                        <td class="text-muted">{{ s.email }}</td>
+                        <td><span class="badge badge-muted">{{ s.engineering_branch }}</span></td>
+                        <td class="mono text-green">{{ s.best_score }}%</td>
+                        <td class="mono">{{ s.attempt_count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <p class="text-muted">No exam data yet.</p>
         {% endif %}
@@ -103,28 +111,30 @@
     <div class="card">
         <h3 style="margin-bottom: 16px;">🔥 10 Hardest Questions</h3>
         {% if hardest %}
-        <table class="table-dark">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Question</th>
-                    <th>Topic</th>
-                    <th>Correct %</th>
-                    <th>Attempts</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for h in hardest %}
-                <tr>
-                    <td class="mono">{{ loop.index }}</td>
-                    <td>{{ h.question }}</td>
-                    <td><span class="badge badge-muted">{{ h.topic }}</span></td>
-                    <td class="mono text-red">{{ h.accuracy }}%</td>
-                    <td class="mono">{{ h.attempts }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table-dark">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Question</th>
+                        <th>Topic</th>
+                        <th>Correct %</th>
+                        <th>Attempts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in hardest %}
+                    <tr>
+                        <td class="mono">{{ loop.index }}</td>
+                        <td>{{ h.question }}</td>
+                        <td><span class="badge badge-muted">{{ h.topic }}</span></td>
+                        <td class="mono text-red">{{ h.accuracy }}%</td>
+                        <td class="mono">{{ h.attempts }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <p class="text-muted">No attempt data yet.</p>
         {% endif %}
@@ -133,8 +143,8 @@
 
 <script>
     // Daily chart data
-    const dailyData = {{ daily_data| safe }};
-    const topicData = {{ topic_chart_data| safe }};
+    const dailyData = {{ daily_data | safe }};
+    const topicData = {{ topic_chart_data | safe }};
     const examCount = {{ exam_count }};
     const practiceCount = {{ practice_count }};
 
