@@ -9,7 +9,12 @@ load_dotenv()
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'ddcet-change-this-in-production')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', 'sqlite:///ddcet.db')
+    
+    db_uri = os.getenv('SQLALCHEMY_DATABASE_URI', 'sqlite:///ddcet.db')
+    if db_uri.startswith("postgres://"):
+        db_uri = db_uri.replace("postgres://", "postgresql://", 1)
+        
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
     app.config['UPLOAD_FOLDER'] = 'uploads'
