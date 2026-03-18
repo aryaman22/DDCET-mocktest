@@ -13,6 +13,9 @@ def create_app():
     db_uri = os.getenv('DATABASE_URL', 'sqlite:///ddcet.db')
     if db_uri.startswith("postgres://"):
         db_uri = db_uri.replace("postgres://", "postgresql://", 1)
+    # Remove pgbouncer param — psycopg2 doesn't support it in URL
+    if "pgbouncer=true" in db_uri:
+        db_uri = db_uri.replace("?pgbouncer=true", "").replace("&pgbouncer=true", "")
 
     app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
