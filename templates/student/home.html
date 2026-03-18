@@ -34,8 +34,8 @@
                     <a href="{{ url_for('student.result', attempt_id=item.attempt_id) }}"
                         class="btn btn-success btn-sm">✓ Completed — View Result</a>
                     {% elif item.status == 'in_progress' %}
-                    <a href="{{ url_for('student.result', attempt_id=item.attempt_id) }}"
-                        class="btn btn-warning btn-sm">⚠ Attempted (In Progress)</a>
+                    <a href="{{ url_for('student.start_exam', config_id=item.config.id) }}"
+                        class="btn btn-warning btn-sm">▶ Resume / Re-enter Exam</a>
                     {% else %}
                     <a href="{{ url_for('student.exam_instructions', config_id=item.config.id) }}"
                         class="btn btn-primary btn-sm">▶ Start Exam</a>

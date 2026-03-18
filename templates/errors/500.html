@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>500 — Server Error | DDCET</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .error-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .error-code {
+            font-size: 96px;
+            font-weight: 800;
+            opacity: .06;
+            line-height: 1;
+            letter-spacing: -4px;
+            color: #1a1814;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="error-page">
+        <div style="max-width:460px; width:100%;">
+            <div class="error-code">500</div>
+            <div style="font-size:48px; margin-bottom:18px;">⚠️</div>
+            <h1 style="font-size:22px; font-weight:500; margin:0 0 10px;">Something went wrong</h1>
+            <p style="color:#6b6860; font-size:15px; line-height:1.65; margin:0 0 32px;">
+                The server encountered an error. Your exam answers are auto-saved.<br>
+                Please refresh and try again.
+            </p>
+            <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+                <a href="javascript:location.reload()"
+                    style="display:inline-flex; align-items:center; gap:6px; padding:9px 18px; background:#e8480a; color:#fff; border-radius:6px; text-decoration:none; font-weight:600; font-size:.875rem;">🔄
+                    Refresh Page</a>
+                <a href="/"
+                    style="display:inline-flex; align-items:center; gap:6px; padding:9px 18px; background:transparent; color:#1a1814; border:1.5px solid rgba(0,0,0,0.15); border-radius:6px; text-decoration:none; font-weight:600; font-size:.875rem;">🏠
+                    Go Home</a>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

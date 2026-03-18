@@ -336,6 +336,85 @@ def submit_exam(attempt_id):
     return jsonify({'ok': True, 'redirect': url_for('student.result', attempt_id=attempt.id)})
 
 
+@student_bp.route('/exam/<int:attempt_id>/beacon_submit', methods=['POST'])
+@login_required
+@student_required
+def beacon_submit(attempt_id):
+    """
+    Called by navigator.sendBeacon() when student closes/leaves exam tab.
+    sendBeacon sends text/plain content-type, so we must handle that.
+    This auto-submits the exam with whatever answers were last saved.
+    """
+    attempt = TestAttempt.query.get_or_404(attempt_id)
+    if attempt.user_id != current_user.id:
+        return '', 403
+    if attempt.status != 'in_progress':
+        return '', 200  # already submitted, no-op
+
+    try:
+        import json as _json
+        raw = request.get_data(as_text=True)
+        data = _json.loads(raw) if raw else {}
+        final_answers = data.get('answers', {})
+    except Exception:
+        final_answers = {}
+
+    config = ExamConfig.query.get(attempt.config_id)
+    if not config:
+        return '', 400
+
+    # Update questions_json with any new answers
+    q_data = _json.loads(attempt.questions_json) if attempt.questions_json else []
+    q_ids = [qd['q_id'] for qd in q_data]
+    questions_map = {q.id: q for q in Question.query.filter(Question.id.in_(q_ids)).all()}
+
+    for qd in q_data:
+        ans = final_answers.get(str(qd['q_id']))
+        if ans:
+            qd['given_answer'] = ans
+            qd['status'] = 'answered'
+
+    user_answers = {}
+    questions_for_scoring = []
+    for qd in q_data:
+        q = questions_map.get(qd['q_id'])
+        if q:
+            questions_for_scoring.append(q)
+            if qd.get('given_answer'):
+                user_answers[str(q.id)] = qd['given_answer']
+
+    result = calculate_exam_score(questions_for_scoring, user_answers, config)
+
+    for qd in q_data:
+        q = questions_map.get(qd['q_id'])
+        if q:
+            given = user_answers.get(str(q.id), 'E')
+            if q.correct_ans == 'X':
+                qd['marks'] = config.marks_correct
+            elif given in ['E', '', 'SKIP']:
+                qd['marks'] = 0
+            elif given == q.correct_ans:
+                qd['marks'] = config.marks_correct
+            else:
+                qd['marks'] = -config.marks_wrong
+
+    attempt.questions_json  = _json.dumps(q_data)
+    attempt.submitted_at    = datetime.now(timezone.utc)
+    attempt.status          = 'timeout'  # beacon = exit, mark as timeout
+    attempt.score           = result['marks']
+    attempt.max_score       = result['max_score']
+    attempt.percentage      = result['percentage']
+    attempt.correct_count   = result['correct']
+    attempt.wrong_count     = result['wrong']
+    attempt.unattempted     = result['unattempted']
+    attempt.bonus_count     = result['bonus']
+    if attempt.started_at:
+        attempt.time_taken_sec = int((datetime.now(timezone.utc) - attempt.started_at).total_seconds())
+
+    db.session.commit()
+    return '', 200  # sendBeacon ignores response body
+
+
 @student_bp.route('/exam/<int:attempt_id>/log', methods=['POST'])
 @login_required
 @student_required
