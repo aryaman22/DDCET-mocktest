@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}DDCET Portal - Welcome{% endblock %}
+
+{% block content %}
+<div class="landing-hero"
+    style="text-align: center; padding: 80px 20px; background: linear-gradient(135deg, var(--bg-hover) 0%, var(--bg-panel) 100%); border-radius: 16px; margin-bottom: 40px; border: 1px solid var(--border);">
+    <h1 style="font-size: 3rem; margin-bottom: 20px; color: var(--primary);">Master the DDCET</h1>
+    <p style="font-size: 1.2rem; color: var(--muted); max-width: 600px; margin: 0 auto 30px;">
+        The ultimate practice and mock exam platform for Diploma to Degree Common Entrance Test aspirants. Real exam
+        simulation, instant analytics, and rank prediction.
+    </p>
+    <div style="display: flex; gap: 15px; justify-content: center;">
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg"
+            style="padding: 12px 30px; font-size: 1.1rem;">Get Started Free</a>
+        <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-lg"
+            style="padding: 12px 30px; font-size: 1.1rem;">Log In</a>
+    </div>
+</div>
+
+<div class="landing-features"
+    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 60px;">
+    <div class="card" style="padding: 30px; text-align: center;">
+        <div style="font-size: 2.5rem; margin-bottom: 15px;">⏱️</div>
+        <h3>Real Exam Environment</h3>
+        <p class="text-muted" style="font-size: 0.95rem; margin-top: 10px;">Fullscreen lock, strict timers, and a UI
+            that mimics the actual DDCET interface to build your test-taking stamina.</p>
+    </div>
+    <div class="card" style="padding: 30px; text-align: center;">
+        <div style="font-size: 2.5rem; margin-bottom: 15px;">📊</div>
+        <h3>Deep Analytics</h3>
+        <p class="text-muted" style="font-size: 0.95rem; margin-top: 10px;">Identify your weak topics instantly. See
+            exactly where you're losing marks and get detailed explanations for every question.</p>
+    </div>
+    <div class="card" style="padding: 30px; text-align: center;">
+        <div style="font-size: 2.5rem; margin-bottom: 15px;">🏆</div>
+        <h3>Rank Predictor</h3>
+        <p class="text-muted" style="font-size: 0.95rem; margin-top: 10px;">Compare your scores with hundreds of other
+            students through our active leaderboard and percentile-based rank estimation.</p>
+    </div>
+</div>
+
+<div class="landing-how-it-works" style="margin-bottom: 60px;">
+    <h2 style="text-align: center; margin-bottom: 40px; font-size: 2rem;">How It Works</h2>
+    <div style="display: flex; flex-direction: column; gap: 20px; max-width: 800px; margin: 0 auto;">
+        <div class="card" style="padding: 20px; display: flex; align-items: center; gap: 20px;">
+            <div
+                style="width: 40px; height: 40px; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-size: 1.2rem; flex-shrink: 0;">
+                1</div>
+            <div>
+                <h4 style="margin: 0 0 5px 0;">Create an Account</h4>
+                <p class="text-muted" style="margin: 0; font-size: 0.9rem;">Sign up with your enrollment number and
+                    select your engineering branch.</p>
+            </div>
+        </div>
+        <div class="card" style="padding: 20px; display: flex; align-items: center; gap: 20px;">
+            <div
+                style="width: 40px; height: 40px; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-size: 1.2rem; flex-shrink: 0;">
+                2</div>
+            <div>
+                <h4 style="margin: 0 0 5px 0;">Practice Without Pressure</h4>
+                <p class="text-muted" style="margin: 0; font-size: 0.9rem;">Use Practice Mode for topic-wise drills with
+                    instant explanations for wrong answers.</p>
+            </div>
+        </div>
+        <div class="card" style="padding: 20px; display: flex; align-items: center; gap: 20px;">
+            <div
+                style="width: 40px; height: 40px; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-size: 1.2rem; flex-shrink: 0;">
+                3</div>
+            <div>
+                <h4 style="margin: 0 0 5px 0;">Take the Mock Exam</h4>
+                <p class="text-muted" style="margin: 0; font-size: 0.9rem;">Enter the high-stakes Exam Mode. No pausing,
+                    no cheating—just you and the timer.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer
+    style="text-align: center; padding: 40px 0; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem;">
+    &copy; {{ range(2024, 2026) | last }} DDCET Mock Portal. All rights reserved.
+</footer>
+{% endblock %}

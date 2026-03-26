@@ -4,6 +4,22 @@ import random
 import io
 from models import db, Question, QuestionBank
 
+def get_bank_names(config):
+    """Get comma-separated bank names for an exam config."""
+    try:
+        bank_ids = json.loads(config.bank_ids) if config.bank_ids else []
+    except (json.JSONDecodeError, TypeError):
+        bank_ids = []
+    
+    if not bank_ids:
+        return 'None'
+        
+    banks = QuestionBank.query.filter(QuestionBank.id.in_(bank_ids)).all()
+    if not banks:
+        return 'None'
+        
+    return ', '.join(b.name for b in banks)
+
 
 EXCEL_HEADERS = ['qno', 'section', 'topic', 'question', 'option_a', 'option_b',
                  'option_c', 'option_d', 'correct_ans', 'explanation']

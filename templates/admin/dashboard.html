@@ -42,13 +42,59 @@
             <div class="stat-icon">📅</div>
             <div class="stat-value mono">{{ attempts_today }}</div>
             <div class="stat-label">Attempts Today</div>
+            {% if attempts_yesterday is defined %}
+            <div
+                style="font-size: 0.8rem; margin-top: 5px; color: {{ 'var(--green)' if attempts_today >= attempts_yesterday else 'var(--yellow)' }};">
+                vs {{ attempts_yesterday }} yesterday
+            </div>
+            {% endif %}
         </div>
         <div class="stat-card">
             <div class="stat-icon">✅</div>
             <div class="stat-value mono">{{ pass_rate }}%</div>
             <div class="stat-label">Pass Rate (≥50%)</div>
         </div>
+
+        {% if most_attempted_config %}
+        <div class="stat-card"
+            style="grid-column: span 2; background: linear-gradient(135deg, var(--bg-hover) 0%, rgba(79, 70, 229, 0.1) 100%);">
+            <div style="display: flex; align-items: center; justify-content: space-between; height: 100%;">
+                <div>
+                    <div class="stat-icon" style="margin-bottom: 5px;">🔥</div>
+                    <div class="stat-label" style="font-weight: bold; color: var(--primary);">Most Attempted Exam</div>
+                    <div style="font-size: 1.1rem; font-weight: 600; margin-top: 5px; color: #fff;">{{
+                        most_attempted_config.name }}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="stat-value mono" style="font-size: 2rem; color: var(--primary);">{{
+                        most_attempted_config.count }}</div>
+                    <div style="font-size: 0.8rem; color: var(--muted);">attempts</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
+
+    <!-- Recent Actions log -->
+    {% if recent_logs %}
+    <div class="card" style="margin-bottom: 24px;">
+        <h3 style="margin-bottom: 16px;">🔍 Recent Admin Actions</h3>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+            {% for log in recent_logs %}
+            <li
+                style="padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span style="font-weight: 500;">{{ log.action }}</span>
+                    {% if log.detail %}<span class="text-muted" style="font-size: 0.9rem; margin-left: 10px;">{{
+                        log.detail }}</span>{% endif %}
+                </div>
+                <span class="text-muted mono" style="font-size: 0.8rem;">{{ log.timestamp.strftime('%Y-%m-%d %H:%M')
+                    }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
 
     <div class="card">
         <h3 style="margin-bottom: 16px;">📋 Recent Attempts</h3>

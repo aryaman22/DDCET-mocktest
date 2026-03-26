@@ -16,6 +16,7 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), default='student')
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     is_active_user = db.Column(db.Boolean, default=True)
+    last_login = db.Column(db.DateTime, nullable=True)
 
     @property
     def is_active(self):
@@ -72,6 +73,7 @@ class ExamConfig(db.Model):
     allow_reattempt = db.Column(db.Boolean, default=False)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    end_date = db.Column(db.DateTime, nullable=True)
 
     creator = db.relationship('User', foreign_keys=[created_by])
 
@@ -128,3 +130,17 @@ class AdminLog(db.Model):
 
     admin = db.relationship('User', foreign_keys=[admin_id])
     affected_user = db.relationship('User', foreign_keys=[user_id])
+
+
+class BookmarkedQuestion(db.Model):
+    __tablename__ = 'bookmarked_questions'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    question_id = db.Column(db.Integer, db.ForeignKey('questions.id', ondelete='CASCADE'), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    __table_args__ = (db.UniqueConstraint('user_id', 'question_id'),)
+    
+    user = db.relationship('User', foreign_keys=[user_id])
+    question = db.relationship('Question', foreign_keys=[question_id])
+

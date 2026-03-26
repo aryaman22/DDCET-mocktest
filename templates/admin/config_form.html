@@ -92,6 +92,18 @@
                             value="{{ config.marks_wrong if config else 0.5 }}" step="0.25" min="0">
                     </div>
                 </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label for="end_date">Exam End Date & Time (Optional)</label>
+                        <input type="datetime-local" name="end_date" id="end_date" class="form-control"
+                            value="{{ config.end_date.strftime('%Y-%m-%dT%H:%M') if config and config.end_date else '' }}"
+                            style="width: 100%;">
+                        <div class="text-muted" style="font-size: .85rem; padding-top: 5px;">
+                            If set, students cannot open or submit the exam after this time.
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="form-check">

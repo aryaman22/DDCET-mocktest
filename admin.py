@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort, Response, send_file
 from flask_login import login_required, current_user
-from models import db, User, QuestionBank, Question, ExamConfig, TestAttempt, PracticeSession, AdminLog
-from utils import parse_csv_questions, parse_json_questions, parse_excel_questions, generate_sample_csv
+from models import db, User, QuestionBank, Question, ExamConfig, TestAttempt, PracticeSession, AdminLog, BookmarkedQuestion
+from utils import parse_csv_questions, parse_json_questions, parse_excel_questions, generate_sample_csv, get_bank_names
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta, timezone
 import json
@@ -55,6 +55,28 @@ def dashboard():
     pass_count = sum(1 for a in submitted_attempts if a.percentage and a.percentage >= 50)
     pass_rate = round(pass_count / len(submitted_attempts) * 100, 1) if submitted_attempts else 0
 
+    # Feature 7: Enhanced Dashboard Stats
+    yesterday_start = today_start - timedelta(days=1)
+    attempts_yesterday = TestAttempt.query.filter(
+        TestAttempt.started_at >= yesterday_start,
+        TestAttempt.started_at < today_start
+    ).count()
+
+    # Most attempted config
+    most_attempted_config = None
+    if submitted_attempts:
+        config_counts = {}
+        for a in submitted_attempts:
+            if a.config_id:
+                config_counts[a.config_id] = config_counts.get(a.config_id, 0) + 1
+        if config_counts:
+            top_id = max(config_counts, key=config_counts.get)
+            top_config = ExamConfig.query.get(top_id)
+            if top_config:
+                most_attempted_config = {'name': top_config.name, 'count': config_counts[top_id]}
+
+    recent_logs = AdminLog.query.order_by(AdminLog.timestamp.desc()).limit(5).all()
+
     last_attempts = TestAttempt.query.order_by(TestAttempt.started_at.desc()).limit(10).all()
 
     return render_template('admin/dashboard.html',
@@ -64,7 +86,10 @@ def dashboard():
                            active_practice_configs=active_practice_configs,
                            total_students=total_students,
                            attempts_today=attempts_today,
+                           attempts_yesterday=attempts_yesterday,
                            pass_rate=pass_rate,
+                           most_attempted_config=most_attempted_config,
+                           recent_logs=recent_logs,
                            last_attempts=last_attempts)
 
 
@@ -495,28 +520,6 @@ def api_topics():
         Question.bank_id.in_(bank_ids)
     ).distinct().order_by(Question.topic).all()
     return jsonify({'topics': [t[0] for t in topics if t[0]]})
-
-
-# ── Attempts debug ────────────────────────────────────
-@admin_bp.route('/attempts/debug')
-@login_required
-@admin_required
-def attempts_debug():
-    """Temporary debug route - shows raw DB count"""
-    total = TestAttempt.query.count()
-    exam_c = TestAttempt.query.filter_by(mode='exam').count()
-    prac_c = TestAttempt.query.filter_by(mode='practice').count()
-    sample = TestAttempt.query.order_by(TestAttempt.id.desc()).limit(3).all()
-    sample_data = [{'id': a.id, 'mode': a.mode, 'status': a.status,
-                    'user': a.user.name if a.user else '?',
-                    'config': a.config.name if a.config else '?'} for a in sample]
-    from flask import jsonify
-    return jsonify({
-        'total_attempts': total,
-        'exam_attempts': exam_c,
-        'practice_attempts': prac_c,
-        'latest_3': sample_data
-    })
 
 
 # ── Attempts ──────────────────────────────────────────

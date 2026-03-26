@@ -27,15 +27,27 @@
         <!-- Desktop nav links (hidden on mobile) -->
         <div class="nav-desktop-links">
             {% if current_user.role == 'admin' %}
-            <a href="{{ url_for('admin.dashboard') }}" class="nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">🏠 Dashboard</a>
-            <a href="{{ url_for('admin.banks') }}" class="nav-item {% if request.endpoint and 'bank' in request.endpoint %}active{% endif %}">Banks</a>
-            <a href="{{ url_for('admin.configs') }}" class="nav-item {% if request.endpoint and 'config' in request.endpoint %}active{% endif %}">Configs</a>
-            <a href="{{ url_for('admin.attempts') }}" class="nav-item {% if request.endpoint in ['admin.attempts', 'admin.attempt_detail'] %}active{% endif %}">Attempts</a>
-            <a href="{{ url_for('admin.practice_sessions') }}" class="nav-item {% if request.endpoint == 'admin.practice_sessions' %}active{% endif %}">Sessions</a>
-            <a href="{{ url_for('admin.analytics') }}" class="nav-item {% if request.endpoint and 'analytics' in request.endpoint %}active{% endif %}">Analytics</a>
-            <a href="{{ url_for('admin.users') }}" class="nav-item {% if request.endpoint == 'admin.users' %}active{% endif %}">Users</a>
+            <a href="{{ url_for('admin.dashboard') }}"
+                class="nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">🏠 Dashboard</a>
+            <a href="{{ url_for('admin.banks') }}"
+                class="nav-item {% if request.endpoint and 'bank' in request.endpoint %}active{% endif %}">Banks</a>
+            <a href="{{ url_for('admin.configs') }}"
+                class="nav-item {% if request.endpoint and 'config' in request.endpoint %}active{% endif %}">Configs</a>
+            <a href="{{ url_for('admin.attempts') }}"
+                class="nav-item {% if request.endpoint in ['admin.attempts', 'admin.attempt_detail'] %}active{% endif %}">Attempts</a>
+            <a href="{{ url_for('admin.practice_sessions') }}"
+                class="nav-item {% if request.endpoint == 'admin.practice_sessions' %}active{% endif %}">Sessions</a>
+            <a href="{{ url_for('admin.analytics') }}"
+                class="nav-item {% if request.endpoint and 'analytics' in request.endpoint %}active{% endif %}">Analytics</a>
+            <a href="{{ url_for('admin.users') }}"
+                class="nav-item {% if request.endpoint == 'admin.users' %}active{% endif %}">Users</a>
             {% else %}
-            <a href="{{ url_for('student.home') }}" class="nav-item {% if request.endpoint == 'student.home' %}active{% endif %}">🏠 Home</a>
+            <a href="{{ url_for('student.home') }}"
+                class="nav-item {% if request.endpoint == 'student.home' %}active{% endif %}">🏠 Home</a>
+            <a href="{{ url_for('student.leaderboard') }}"
+                class="nav-item {% if request.endpoint == 'student.leaderboard' %}active{% endif %}">🏆 Leaderboard</a>
+            <a href="{{ url_for('student.bookmarks') }}"
+                class="nav-item {% if request.endpoint == 'student.bookmarks' %}active{% endif %}">🔖 Bookmarks</a>
             {% endif %}
         </div>
 
@@ -45,7 +57,8 @@
                 <span class="user-avatar-sm">{{ current_user.name[0]|upper }}</span>
                 <span class="nav-user-name-sm">{{ current_user.name.split()[0] }}</span>
             </a>
-            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red);">Logout</a>
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm"
+                style="color:var(--red);border-color:var(--red);">Logout</a>
         </div>
 
         <!-- Mobile hamburger (hidden on desktop) -->
@@ -73,21 +86,43 @@
 
                 <div class="nav-links">
                     {% if current_user.role == 'admin' %}
-                    <a href="{{ url_for('admin.dashboard') }}" class="nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">🏠 Dashboard</a>
-                    <a href="{{ url_for('admin.banks') }}" class="nav-item {% if request.endpoint and 'bank' in request.endpoint %}active{% endif %}">📚 Banks</a>
-                    <a href="{{ url_for('admin.configs') }}" class="nav-item {% if request.endpoint and 'config' in request.endpoint %}active{% endif %}">⚙️ Configs</a>
-                    <a href="{{ url_for('admin.attempts') }}" class="nav-item {% if request.endpoint in ['admin.attempts', 'admin.attempt_detail'] %}active{% endif %}">📋 Attempts</a>
-                    <a href="{{ url_for('admin.practice_sessions') }}" class="nav-item {% if request.endpoint == 'admin.practice_sessions' %}active{% endif %}">🎯 Sessions</a>
-                    <a href="{{ url_for('admin.analytics') }}" class="nav-item {% if request.endpoint and 'analytics' in request.endpoint %}active{% endif %}">📊 Analytics</a>
-                    <a href="{{ url_for('admin.users') }}" class="nav-item {% if request.endpoint == 'admin.users' %}active{% endif %}">👥 Users</a>
+                    <a href="{{ url_for('admin.dashboard') }}"
+                        class="nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">🏠
+                        Dashboard</a>
+                    <a href="{{ url_for('admin.banks') }}"
+                        class="nav-item {% if request.endpoint and 'bank' in request.endpoint %}active{% endif %}">📚
+                        Banks</a>
+                    <a href="{{ url_for('admin.configs') }}"
+                        class="nav-item {% if request.endpoint and 'config' in request.endpoint %}active{% endif %}">⚙️
+                        Configs</a>
+                    <a href="{{ url_for('admin.attempts') }}"
+                        class="nav-item {% if request.endpoint in ['admin.attempts', 'admin.attempt_detail'] %}active{% endif %}">📋
+                        Attempts</a>
+                    <a href="{{ url_for('admin.practice_sessions') }}"
+                        class="nav-item {% if request.endpoint == 'admin.practice_sessions' %}active{% endif %}">🎯
+                        Sessions</a>
+                    <a href="{{ url_for('admin.analytics') }}"
+                        class="nav-item {% if request.endpoint and 'analytics' in request.endpoint %}active{% endif %}">📊
+                        Analytics</a>
+                    <a href="{{ url_for('admin.users') }}"
+                        class="nav-item {% if request.endpoint == 'admin.users' %}active{% endif %}">👥 Users</a>
                     {% else %}
-                    <a href="{{ url_for('student.home') }}" class="nav-item {% if request.endpoint == 'student.home' %}active{% endif %}">🏠 Home</a>
+                    <a href="{{ url_for('student.home') }}"
+                        class="nav-item {% if request.endpoint == 'student.home' %}active{% endif %}">🏠 Home</a>
+                    <a href="{{ url_for('student.leaderboard') }}"
+                        class="nav-item {% if request.endpoint == 'student.leaderboard' %}active{% endif %}">🏆
+                        Leaderboard</a>
+                    <a href="{{ url_for('student.bookmarks') }}"
+                        class="nav-item {% if request.endpoint == 'student.bookmarks' %}active{% endif %}">🔖
+                        Bookmarks</a>
                     {% endif %}
                 </div>
 
                 <div class="nav-actions">
-                    <a href="{{ url_for('auth.profile') }}" class="btn btn-outline btn-sm w-100" style="margin-bottom:8px;">👤 My Profile</a>
-                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline w-100" style="color:var(--red);border-color:var(--red);">Logout</a>
+                    <a href="{{ url_for('auth.profile') }}" class="btn btn-outline btn-sm w-100"
+                        style="margin-bottom:8px;">👤 My Profile</a>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline w-100"
+                        style="color:var(--red);border-color:var(--red);">Logout</a>
                 </div>
             </div>
             <div class="nav-overlay" id="navOverlay"></div>
@@ -117,9 +152,9 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const menuToggle = document.getElementById('menuToggle');
-            const closeMenu   = document.getElementById('closeMenu');
+            const closeMenu = document.getElementById('closeMenu');
             const navContainer = document.getElementById('navContainer');
-            const navOverlay  = document.getElementById('navOverlay');
+            const navOverlay = document.getElementById('navOverlay');
 
             if (!navContainer) return;
 
@@ -142,7 +177,7 @@
             }
 
             if (menuToggle) menuToggle.addEventListener('click', toggleMenu);
-            if (closeMenu)  closeMenu.addEventListener('click', closeMenuFn);
+            if (closeMenu) closeMenu.addEventListener('click', closeMenuFn);
             if (navOverlay) navOverlay.addEventListener('click', closeMenuFn);
 
             // Close menu when a nav link is tapped on mobile

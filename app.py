@@ -83,7 +83,14 @@ def create_app():
     def index():
         if current_user.is_authenticated:
             return redirect('/admin/dashboard' if current_user.role == 'admin' else '/student/home')
-        return redirect('/auth/login')
+        
+        from models import User, Question, TestAttempt
+        stats = {
+            'students': User.query.filter_by(role='student').count(),
+            'questions': Question.query.count(),
+            'attempts': TestAttempt.query.count()
+        }
+        return render_template('landing.html', stats=stats)
 
     @app.errorhandler(403)
     def forbidden(e):

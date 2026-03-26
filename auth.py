@@ -1,10 +1,51 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
 from models import db, User
+from datetime import datetime, timezone
 import bcrypt as bc
 import secrets
+import re
+import time
+from collections import defaultdict
+from threading import Lock
 
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
+
+# FIX 7: Input Validation Logic
+EMAIL_RE = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
+NAME_RE = re.compile(r'^[a-zA-Z\s]{2,100}$')
+ENROLL_RE = re.compile(r'^[a-zA-Z0-9\-]{3,20}$')
+
+def validate_email(email): return bool(EMAIL_RE.match(email))
+def validate_name(name): return bool(NAME_RE.match(name.strip()))
+def validate_enrollment(enr): return bool(ENROLL_RE.match(enr.strip()))
+
+# FIX 3: Login brute-force protection
+_login_attempts = defaultdict(list)  # {ip: [timestamps]}
+_lock = Lock()
+MAX_ATTEMPTS = 5
+WINDOW = 300    # 5 min
+LOCKOUT = 600   # 10 min
+
+def check_rate_limit(ip):
+    now = time.time()
+    with _lock:
+        _login_attempts[ip] = [t for t in _login_attempts[ip] if now - t < LOCKOUT]
+        if len(_login_attempts[ip]) >= MAX_ATTEMPTS:
+            wait = int(LOCKOUT - (now - _login_attempts[ip][0]))
+            return False, wait
+        return True, 0
+
+def record_fail(ip):
+    with _lock:
+        _login_attempts[ip].append(time.time())
+
+def clear_attempts(ip):
+    with _lock:
+        _login_attempts[ip] = []
+
+def get_real_ip():
+    return request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
 
 
 def generate_csrf_token():
@@ -31,6 +72,14 @@ def login():
         return redirect(url_for('student.home'))
 
     if request.method == 'POST':
+        ip = get_real_ip()
+        allowed, wait_sec = check_rate_limit(ip)
+        
+        if not allowed:
+            mins, secs = divmod(wait_sec, 60)
+            flash(f'Too many failed attempts. Try again in {mins}m {secs}s.', 'error')
+            return redirect(url_for('auth.login'))
+
         if not validate_csrf(request.form.get('csrf_token')):
             flash('Invalid request. Please try again.', 'error')
             return redirect(url_for('auth.login'))
@@ -43,11 +92,19 @@ def login():
             if not user.is_active:
                 flash('Your account has been deactivated. Contact admin.', 'error')
                 return redirect(url_for('auth.login'))
+            
+            clear_attempts(ip)
+            
+            # Update last_login
+            user.last_login = datetime.now(timezone.utc)
+            db.session.commit()
+            
             login_user(user)
             if user.role == 'admin':
                 return redirect(url_for('admin.dashboard'))
             return redirect(url_for('student.home'))
         else:
+            record_fail(ip)
             flash('Invalid email or password.', 'error')
             return redirect(url_for('auth.login'))
 
@@ -80,6 +137,18 @@ def register():
         # Validation
         if not name or not email or not password or not enrollment_number or not engineering_branch:
             flash('All fields are required.', 'error')
+            return redirect(url_for('auth.register'))
+
+        if not validate_name(name):
+            flash('Name must be 2-100 characters and contain only letters and spaces.', 'error')
+            return redirect(url_for('auth.register'))
+
+        if not validate_email(email):
+            flash('Please enter a valid email address.', 'error')
+            return redirect(url_for('auth.register'))
+
+        if not validate_enrollment(enrollment_number):
+            flash('Enrollment Number must be alphanumeric (dashes allowed) and 3-20 characters long.', 'error')
             return redirect(url_for('auth.register'))
 
         if engineering_branch not in VALID_BRANCHES:
@@ -154,6 +223,10 @@ def profile():
 
             if not name:
                 flash('Name cannot be empty.', 'error')
+                return redirect(url_for('auth.profile'))
+                
+            if not validate_name(name):
+                flash('Name must be 2-100 characters and contain only letters and spaces.', 'error')
                 return redirect(url_for('auth.profile'))
 
             if engineering_branch and engineering_branch not in VALID_BRANCHES:

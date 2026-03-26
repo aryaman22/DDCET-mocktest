@@ -49,8 +49,8 @@ function renderQuestion(idx) {
         const isCorrect = prev.isCorrect;
         feedbackHtml = `
             <div class="feedback-box ${isCorrect ? 'feedback-correct' : 'feedback-wrong'}">
-                <div>${isCorrect ? '✅ Correct!' : '❌ Incorrect.'} The answer is <strong>${q.correct_ans}</strong>: ${q['option_' + q.correct_ans.toLowerCase()] || 'Bonus question'}</div>
-                ${q.explanation ? `<div class="explanation">💡 ${q.explanation}</div>` : ''}
+                <div>${isCorrect ? '✅ Correct!' : '❌ Incorrect.'} The answer is <strong>${prev.correct_ans}</strong>: ${q['option_' + prev.correct_ans.toLowerCase()] || 'Bonus question'}</div>
+                ${prev.explanation ? `<div class="explanation">💡 ${prev.explanation}</div>` : ''}
             </div>
         `;
     }
@@ -122,29 +122,64 @@ function selectPracticeOption(qId, opt) {
 }
 
 // ── Submit Answer ─────────────────────────────
-function submitPracticeAnswer(qId) {
+async function submitPracticeAnswer(qId) {
     if (!selectedOption || answered[qId]) return;
 
     const q = questions[currentIdx];
     const given = selectedOption;
-    const isCorrect = given === q.correct_ans || q.correct_ans === 'X';
 
-    answered[qId] = { given, correct_ans: q.correct_ans, isCorrect };
-    totalAnswered++;
-    if (isCorrect) totalCorrect++;
+    // Disable submit button while waiting
+    const submitBtn = document.getElementById('submit-answer-btn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Submitting...';
+    }
 
-    selectedOption = null;
+    try {
+        // POST to server to get correct answer
+        const response = await fetch(`/student/practice/${SESSION_ID}/answer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ q_id: parseInt(qId), given_answer: given })
+        });
 
-    // POST to server
-    fetch(`/student/practice/${SESSION_ID}/answer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q_id: parseInt(qId), given_answer: given })
-    }).catch(() => { });
+        const data = await response.json();
 
-    // Re-render with feedback
-    renderQuestion(currentIdx);
-    updateAccuracy();
+        if (!data.ok) {
+            alert('Error submitting answer. Please try again.');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Submit Answer';
+            }
+            return;
+        }
+
+        const isCorrect = given === data.correct_ans || data.correct_ans === 'X';
+
+        answered[qId] = {
+            given,
+            correct_ans: data.correct_ans,
+            explanation: data.explanation,
+            isCorrect
+        };
+
+        totalAnswered++;
+        if (isCorrect) totalCorrect++;
+
+        selectedOption = null;
+
+        // Re-render with feedback
+        renderQuestion(currentIdx);
+        updateAccuracy();
+
+    } catch (err) {
+        console.error("Submission failed:", err);
+        alert('Network error. Please try again.');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Submit Answer';
+        }
+    }
 }
 
 // ── Skip ──────────────────────────────────────

@@ -3,12 +3,33 @@
 {% block head %}
 <style>
     @media (max-width: 600px) {
-        .result-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 10px !important; }
-        .result-stat .value { font-size: 1.1rem !important; }
-        .review-options { grid-template-columns: 1fr !important; }
-        .review-header { flex-direction: column; gap: 6px; }
-        .tabs { flex-wrap: wrap; }
-        .tab-btn { flex: 1; min-width: 120px; font-size: 13px; }
+        .result-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 10px !important;
+        }
+
+        .result-stat .value {
+            font-size: 1.1rem !important;
+        }
+
+        .review-options {
+            grid-template-columns: 1fr !important;
+        }
+
+        .review-header {
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .tabs {
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            flex: 1;
+            min-width: 120px;
+            font-size: 13px;
+        }
     }
 </style>
 {% endblock %}
@@ -16,7 +37,8 @@
 <div class="main-content" style="max-width: 900px; margin: 0 auto;">
     <div class="result-header">
         <h1>📊 Exam Result</h1>
-        <p class="text-muted">{{ config.name if config else 'Exam' }} · {{ attempt.submitted_at | ist if attempt.submitted_at else '' }}</p>
+        <p class="text-muted">{{ config.name if config else 'Exam' }} · {{ attempt.submitted_at | ist if
+            attempt.submitted_at else '' }}</p>
 
         <!-- Progress Ring -->
         <div class="progress-ring-container" style="margin: 30px 0;">
@@ -60,6 +82,23 @@
         </div>
     </div>
 
+    <!-- Feature 4: Rank Predictor -->
+    {% if rank_estimation %}
+    <div class="result-rank-predictor"
+        style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, var(--bg-hover) 0%, rgba(34, 197, 94, 0.1) 100%); border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+        <div>
+            <h3 style="margin: 0 0 5px 0; color: var(--green);">🌟 Estimated Rank: #{{ rank_estimation.rank }}</h3>
+            <p class="text-muted" style="margin: 0; font-size: 0.9rem;">Out of {{ rank_estimation.total_students }}
+                students who took this exam</p>
+        </div>
+        <div style="text-align: right;">
+            <div style="font-size: 1.8rem; font-weight: bold; font-family: var(--font-mono);">{{
+                rank_estimation.percentile }}<span style="font-size: 1rem;">%ile</span></div>
+            <p class="text-muted" style="margin: 0; font-size: 0.8rem;">Percentile</p>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Tabs -->
     <div class="tabs">
         <button class="tab-btn active" data-tab="tab-topics">📊 Topic Analysis</button>
@@ -70,7 +109,8 @@
     <div id="tab-topics" class="tab-content active">
         <div class="chart-container">
             <div style="position:relative; width:100%; overflow-x:auto;">
-                <div class="bar-chart" id="topic-chart" style="min-height:220px; padding-bottom:30px; min-width:300px;"></div>
+                <div class="bar-chart" id="topic-chart" style="min-height:220px; padding-bottom:30px; min-width:300px;">
+                </div>
             </div>
         </div>
     </div>
@@ -122,7 +162,7 @@
 </div>
 
 <script>
-    const topicChart = {{ topic_chart| safe }};
+    const topicChart = {{ topic_chart | safe }};
 
     document.addEventListener('DOMContentLoaded', () => {
         // Tabs

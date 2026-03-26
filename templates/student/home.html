@@ -12,6 +12,30 @@
     </div>
     {% endif %}
 
+    <!-- ═══ SECTION: Weak Topics (Feature 5) ═══ -->
+    {% if weak_topics and weak_topics|length > 0 %}
+    <div class="home-section" style="margin-bottom: 30px;">
+        <div class="card" style="border-left: 4px solid var(--red);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: var(--red);">⚠️ Focus Areas</h3>
+                <span class="badge badge-error">Low Accuracy Detected</span>
+            </div>
+            <p class="text-muted" style="font-size: 0.9rem; margin-top: 0;">Based on your recent mock exams, you should
+                review these topics:</p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
+                {% for topic in weak_topics %}
+                <div
+                    style="background: var(--bg-hover); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); flex: 1; min-width: 150px;">
+                    <div style="font-weight: 600; font-size: 0.95rem;">{{ topic.name }}</div>
+                    <div style="color: var(--red); font-weight: bold; font-size: 1.1rem; margin-top: 5px;">{{
+                        topic.accuracy }}%</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- ═══ SECTION A: Mock Exams ═══ -->
     {% if exam_data %}
     <div class="home-section section-exam">
@@ -24,11 +48,17 @@
             <div class="config-card">
                 <h3>{{ item.config.name }}</h3>
                 <div class="config-meta">
-                    <span>📝 {{ item.config.total_questions }} questions</span>
-                    <span>⏱ {{ item.config.duration_minutes }} min</span>
+                    <span>📝 {{ item.config.total_questions }} q</span>
+                    <span>⏱ {{ item.config.duration_minutes }} m</span>
                     <span>📊 +{{ item.config.marks_correct }}/−{{ item.config.marks_wrong }}</span>
+                    {% if item.config.end_date %}
+                    <span style="color: var(--yellow);">⏳ Due: {{ item.config.end_date.strftime('%b %d, %H:%M')
+                        }}</span>
+                    {% endif %}
                 </div>
-                <p class="text-muted" style="font-size:.85rem; margin-bottom: 12px;">📚 {{ item.bank_names }}</p>
+                <p class="text-muted"
+                    style="font-size:.85rem; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    📚 {{ item.bank_names }}</p>
                 <div class="config-footer">
                     {% if item.status == 'completed' %}
                     <a href="{{ url_for('student.result', attempt_id=item.attempt_id) }}"

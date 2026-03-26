@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort
 from auth import validate_csrf
 from flask_login import login_required, current_user
-from models import db, User, QuestionBank, Question, ExamConfig, TestAttempt, PracticeSession, AdminLog
+from models import db, User, QuestionBank, Question, ExamConfig, TestAttempt, PracticeSession, AdminLog, BookmarkedQuestion
 from utils import select_questions_for_config, calculate_exam_score
 from datetime import datetime, timezone
 import json
@@ -63,6 +63,46 @@ def home():
             'attempt_id': attempt_id
         })
 
+    # Feature 5: Weak topic detection
+    all_attempts = TestAttempt.query.filter_by(
+        user_id=current_user.id,
+        mode='exam',
+        status='submitted'
+    ).all()
+    
+    topic_stats = {}
+    for att in all_attempts:
+        if att.questions_json:
+            try:
+                q_data = json.loads(att.questions_json)
+                q_ids = [qd['q_id'] for qd in q_data]
+                questions_map = {q.id: q for q in Question.query.filter(Question.id.in_(q_ids)).all()}
+                
+                for qd in q_data:
+                    q = questions_map.get(qd['q_id'])
+                    if q and q.topic:
+                        if q.topic not in topic_stats:
+                            topic_stats[q.topic] = {'correct': 0, 'total': 0}
+                        
+                        topic_stats[q.topic]['total'] += 1
+                        given = qd.get('given_answer')
+                        if given and (given.upper() == q.correct_ans or q.correct_ans == 'X'):
+                            topic_stats[q.topic]['correct'] += 1
+            except:
+                pass
+                
+    weak_topics = []
+    for topic, stats in topic_stats.items():
+        if stats['total'] >= 3: # min 3 attempts to assess
+            accuracy = (stats['correct'] / stats['total']) * 100
+            if accuracy < 50:
+                weak_topics.append({
+                    'name': topic,
+                    'accuracy': round(accuracy)
+                })
+    weak_topics.sort(key=lambda x: x['accuracy'])
+    weak_topics = weak_topics[:3] # Top 3 weakest
+
     # Practice configs
     practice_configs = ExamConfig.query.filter_by(mode='practice', is_active=True).all()
     practice_data = []
@@ -98,7 +138,8 @@ def home():
     return render_template('student/home.html',
                            exam_data=exam_data,
                            practice_data=practice_data,
-                           history=history)
+                           history=history,
+                           weak_topics=weak_topics)
 
 
 # ══════════════════════════════════════════════════════
@@ -278,6 +319,8 @@ def submit_exam(attempt_id):
     data = request.get_json() or {}
     final_answers = data.get('answers', {})
 
+    # FIX 8: Validate answers are A/B/C/D only (no payload injection)
+    VALID_ANSWERS = {'A', 'B', 'C', 'D'}
     # Update questions_json with final answers
     q_data = json.loads(attempt.questions_json)
     q_ids = [qd['q_id'] for qd in q_data]
@@ -286,7 +329,7 @@ def submit_exam(attempt_id):
 
     for qd in q_data:
         ans = final_answers.get(str(qd['q_id']))
-        if ans:
+        if ans and ans in VALID_ANSWERS:
             qd['given_answer'] = ans
             qd['status'] = 'answered'
 
@@ -368,9 +411,10 @@ def beacon_submit(attempt_id):
     q_ids = [qd['q_id'] for qd in q_data]
     questions_map = {q.id: q for q in Question.query.filter(Question.id.in_(q_ids)).all()}
 
+    VALID_ANSWERS = {'A', 'B', 'C', 'D'}
     for qd in q_data:
         ans = final_answers.get(str(qd['q_id']))
-        if ans:
+        if ans and ans in VALID_ANSWERS:
             qd['given_answer'] = ans
             qd['status'] = 'answered'
 
@@ -494,12 +538,37 @@ def result(attempt_id):
          'correct': d['correct'], 'total': d['total']}
         for t, d in sorted(topic_stats.items())
     ]
+    
+    # Feature 4: Rank predictor (estimated rank based on percentile among students who took this exam)
+    rank_estimation = None
+    if config.mode == 'exam' and attempt.max_score > 0:
+        all_scores = [att.score for att in TestAttempt.query.filter_by(
+            config_id=config.id, 
+            status='submitted'
+        ).all()]
+        
+        if len(all_scores) > 3:
+            all_scores.sort(reverse=True)
+            try:
+                rank = all_scores.index(attempt.score) + 1
+            except ValueError:
+                rank = len(all_scores)
+            
+            total_students_taken = len(all_scores)
+            percentile = round(((total_students_taken - rank) / total_students_taken) * 100, 1)
+            
+            rank_estimation = {
+                'rank': rank,
+                'total_students': total_students_taken,
+                'percentile': percentile
+            }
 
     return render_template('student/result.html',
                            attempt=attempt,
                            config=config,
                            review=review,
-                           topic_chart=json.dumps(topic_chart))
+                           topic_chart=json.dumps(topic_chart),
+                           rank_estimation=rank_estimation)
 
 
 # ══════════════════════════════════════════════════════
@@ -564,8 +633,7 @@ def practice_page(session_id):
                 'option_b': q.option_b,
                 'option_c': q.option_c,
                 'option_d': q.option_d,
-                'correct_ans': q.correct_ans,
-                'explanation': q.explanation or ''
+                # FIX 4: DO NOT send correct_ans or explanation to client before answered
             })
 
     # Topic drill display
@@ -595,17 +663,31 @@ def practice_answer(session_id):
     q_id = data.get('q_id')
     given_answer = data.get('given_answer', '')
 
-    if given_answer and given_answer.lower() != 'skip':
+    # FIX 8: Validate Practice Answer
+    VALID_ANSWERS = {'A', 'B', 'C', 'D'}
+    if given_answer and (given_answer.upper() in VALID_ANSWERS or given_answer.lower() == 'skip'):
         q = Question.query.get(q_id)
         if q:
             practice.total_answered += 1
-            if given_answer.upper() == q.correct_ans or q.correct_ans == 'X':
-                practice.total_correct += 1
+            is_correct = False
+            
+            if given_answer.lower() != 'skip':
+                is_correct = (given_answer.upper() == q.correct_ans) or (q.correct_ans == 'X')
+                if is_correct:
+                    practice.total_correct += 1
+                    
             practice.last_active_at = datetime.now(timezone.utc)
             db.session.commit()
-            return jsonify({'ok': True, 'correct': given_answer.upper() == q.correct_ans or q.correct_ans == 'X'})
+            
+            # Send correct_ans and explanation ONLY in this response
+            return jsonify({
+                'ok': True, 
+                'is_correct': is_correct,
+                'correct_ans': q.correct_ans,
+                'explanation': q.explanation or ''
+            })
 
-    return jsonify({'ok': True, 'correct': False})
+    return jsonify({'ok': False, 'error': 'Invalid answer submitted'})
 
 
 @student_bp.route('/practice/<int:session_id>/finish', methods=['POST'])
@@ -660,3 +742,68 @@ def practice_result(session_id):
                            config=config,
                            accuracy=accuracy,
                            questions=questions_list)
+
+
+# ══════════════════════════════════════════════════════
+# NEW FEATURES: Leaderboard & Bookmarks
+# ══════════════════════════════════════════════════════
+
+@student_bp.route('/leaderboard')
+@login_required
+@student_required
+def leaderboard():
+    # Feature 3: Student leaderboard aggregate
+    students = User.query.filter_by(role='student', is_active_user=True).all()
+    leaderboard_data = []
+    
+    for s in students:
+        attempts = TestAttempt.query.filter_by(user_id=s.id, mode='exam', status='submitted').all()
+        if attempts:
+            total_score = sum(a.score for a in attempts)
+            total_max = sum(a.max_score for a in attempts)
+            avg_percent = round((sum(a.percentage for a in attempts) / len(attempts)), 1)
+            exams_taken = len(attempts)
+            
+            leaderboard_data.append({
+                'name': s.name,
+                'branch': s.engineering_branch,
+                'total_score': total_score,
+                'avg_percent': avg_percent,
+                'exams_taken': exams_taken
+            })
+            
+    # Sort by total score, then avg percent
+    leaderboard_data.sort(key=lambda x: (x['total_score'], x['avg_percent']), reverse=True)
+    
+    return render_template('student/leaderboard.html', leaderboard=leaderboard_data)
+
+
+@student_bp.route('/bookmarks')
+@login_required
+@student_required
+def bookmarks():
+    # Feature 8: View bookmarked questions
+    bookmarks = BookmarkedQuestion.query.filter_by(user_id=current_user.id).order_by(BookmarkedQuestion.created_at.desc()).all()
+    return render_template('student/bookmarks.html', bookmarks=bookmarks)
+
+
+@student_bp.route('/bookmark/<int:q_id>', methods=['POST'])
+@login_required
+@student_required
+def toggle_bookmark(q_id):
+    # Feature 8: API to toggle bookmark
+    if not validate_csrf(request.headers.get('X-CSRFToken')):
+        return jsonify({'ok': False, 'error': 'Invalid CSRF'}), 403
+        
+    q = Question.query.get_or_404(q_id)
+    existing = BookmarkedQuestion.query.filter_by(user_id=current_user.id, question_id=q_id).first()
+    
+    if existing:
+        db.session.delete(existing)
+        db.session.commit()
+        return jsonify({'ok': True, 'bookmarked': False})
+    else:
+        new_bm = BookmarkedQuestion(user_id=current_user.id, question_id=q_id)
+        db.session.add(new_bm)
+        db.session.commit()
+        return jsonify({'ok': True, 'bookmarked': True})

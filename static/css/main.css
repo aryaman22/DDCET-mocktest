@@ -1560,3 +1560,52 @@ textarea.form-control { resize: vertical; min-height: 80px; }
     max-width: 1200px;
   }
 }
+
+/* ── Utility ─────────────────────────────────────── */
+.mr-2 { margin-right: 8px; }
+.ml-2 { margin-left: 8px; }
+
+/* ── Landing Page Styles ─────────────────────────── */
+.landing-hero {
+  animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.landing-features .card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.landing-features .card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
+}
+
+.landing-how-it-works .card {
+  background: var(--surface2);
+  border: none;
+}
+
+/* ── Leaderboard Styles ──────────────────────────── */
+.result-rank-predictor {
+  transition: transform 0.2s;
+}
+.result-rank-predictor:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+/* ── Bookmark Styles ─────────────────────────────── */
+.remove-bookmark-btn {
+  transition: all 0.2s;
+}
+.remove-bookmark-btn:hover {
+  background: var(--red-light);
+}
+
+.review-item {
+  transition: opacity 0.3s;
+}
