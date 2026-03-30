@@ -1,112 +1,107 @@
 {% extends "base.html" %}
 {% block title %}Admin Dashboard — DDCET{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
 {% block content %}
-<div class="main-content">
-    <h1 style="margin-bottom: 24px;">📊 Admin Dashboard</h1>
-
-    {% if total_questions == 0 %}
-    <div class="info-box info-box-yellow" style="margin-bottom: 24px;">
-        ⚠ No questions in database yet. Upload questions to get started.
-        <a href="{{ url_for('admin.banks') }}" class="btn btn-primary btn-sm" style="margin-left: auto;">+ Upload
-            Questions Now →</a>
-    </div>
-    {% endif %}
-
-    <div class="card-grid">
-        <div class="stat-card">
+<div class="animate-fade">
+    {# Stat Cards #}
+    <div class="grid grid-4 gap-16" style="margin-bottom:24px">
+        <div class="stat-card indigo">
             <div class="stat-icon">📝</div>
-            <div class="stat-value mono">{{ total_questions }}</div>
+            <div class="stat-value">{{ total_questions }}</div>
             <div class="stat-label">Total Questions</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card green">
             <div class="stat-icon">📚</div>
-            <div class="stat-value mono">{{ active_banks }}</div>
+            <div class="stat-value">{{ active_banks }}</div>
             <div class="stat-label">Active Banks</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-icon">📝</div>
-            <div class="stat-value mono">{{ active_exam_configs }}</div>
-            <div class="stat-label">Active Exam Configs</div>
+        <div class="stat-card blue">
+            <div class="stat-icon">⚙️</div>
+            <div class="stat-value">{{ active_exam_configs }}</div>
+            <div class="stat-label">Exam Configs</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card yellow">
             <div class="stat-icon">🎯</div>
-            <div class="stat-value mono">{{ active_practice_configs }}</div>
-            <div class="stat-label">Active Practice Configs</div>
+            <div class="stat-value">{{ active_practice_configs }}</div>
+            <div class="stat-label">Practice Configs</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card indigo">
             <div class="stat-icon">👥</div>
-            <div class="stat-value mono">{{ total_students }}</div>
+            <div class="stat-value">{{ total_students }}</div>
             <div class="stat-label">Total Students</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-icon">📅</div>
-            <div class="stat-value mono">{{ attempts_today }}</div>
+        <div class="stat-card green">
+            <div class="stat-icon">📋</div>
+            <div class="stat-value">{{ attempts_today }}</div>
             <div class="stat-label">Attempts Today</div>
-            {% if attempts_yesterday is defined %}
-            <div
-                style="font-size: 0.8rem; margin-top: 5px; color: {{ 'var(--green)' if attempts_today >= attempts_yesterday else 'var(--yellow)' }};">
-                vs {{ attempts_yesterday }} yesterday
+        </div>
+        <div class="stat-card {% if pass_rate >= 50 %}green{% else %}red{% endif %}">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value">{{ pass_rate }}%</div>
+            <div class="stat-label">Pass Rate</div>
+        </div>
+    </div>
+
+    <div class="grid grid-2 gap-16" style="margin-bottom:24px">
+        {# Today vs Yesterday #}
+        <div class="card">
+            <div class="card-header"><span class="card-title">📈 Today vs Yesterday</span></div>
+            <div class="flex items-center gap-16">
+                <div><span class="text-secondary text-sm">Today</span>
+                    <div class="font-mono font-bold" style="font-size:1.5rem">{{ attempts_today }}</div>
+                </div>
+                <div><span class="text-secondary text-sm">Yesterday</span>
+                    <div class="font-mono" style="font-size:1.5rem;color:var(--text-muted)">{{ attempts_yesterday }}
+                    </div>
+                </div>
+                {% if attempts_today > attempts_yesterday %}
+                <span class="badge badge-success">↑ {{ attempts_today - attempts_yesterday }}</span>
+                {% elif attempts_today < attempts_yesterday %} <span class="badge badge-danger">↓ {{ attempts_yesterday
+                    - attempts_today }}</span>
+                    {% else %}
+                    <span class="badge badge-muted">= Same</span>
+                    {% endif %}
+            </div>
+            {% if most_attempted_config %}
+            <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+                <div class="text-sm text-secondary">Most Attempted</div>
+                <div class="font-bold">{{ most_attempted_config.name }} <span class="badge badge-primary">{{
+                        most_attempted_config.count}} attempts</span></div>
             </div>
             {% endif %}
         </div>
-        <div class="stat-card">
-            <div class="stat-icon">✅</div>
-            <div class="stat-value mono">{{ pass_rate }}%</div>
-            <div class="stat-label">Pass Rate (≥50%)</div>
-        </div>
 
-        {% if most_attempted_config %}
-        <div class="stat-card"
-            style="grid-column: span 2; background: linear-gradient(135deg, var(--bg-hover) 0%, rgba(79, 70, 229, 0.1) 100%);">
-            <div style="display: flex; align-items: center; justify-content: space-between; height: 100%;">
-                <div>
-                    <div class="stat-icon" style="margin-bottom: 5px;">🔥</div>
-                    <div class="stat-label" style="font-weight: bold; color: var(--primary);">Most Attempted Exam</div>
-                    <div style="font-size: 1.1rem; font-weight: 600; margin-top: 5px; color: #fff;">{{
-                        most_attempted_config.name }}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div class="stat-value mono" style="font-size: 2rem; color: var(--primary);">{{
-                        most_attempted_config.count }}</div>
-                    <div style="font-size: 0.8rem; color: var(--muted);">attempts</div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Recent Actions log -->
-    {% if recent_logs %}
-    <div class="card" style="margin-bottom: 24px;">
-        <h3 style="margin-bottom: 16px;">🔍 Recent Admin Actions</h3>
-        <ul style="list-style: none; padding: 0; margin: 0;">
+        {# Recent Logs #}
+        <div class="card">
+            <div class="card-header"><span class="card-title">📋 Admin Activity</span></div>
+            {% if recent_logs %}
             {% for log in recent_logs %}
-            <li
-                style="padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <span style="font-weight: 500;">{{ log.action }}</span>
-                    {% if log.detail %}<span class="text-muted" style="font-size: 0.9rem; margin-left: 10px;">{{
-                        log.detail }}</span>{% endif %}
-                </div>
-                <span class="text-muted mono" style="font-size: 0.8rem;">{{ log.timestamp.strftime('%Y-%m-%d %H:%M')
-                    }}</span>
-            </li>
+            <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:.85rem">
+                <div class="font-medium">{{ log.action }}</div>
+                <div class="text-muted text-xs">{{ log.detail[:60] }} · {{ log.timestamp|ist }}</div>
+            </div>
             {% endfor %}
-        </ul>
+            {% else %}
+            <p class="text-muted text-sm">No recent activity.</p>
+            {% endif %}
+        </div>
     </div>
-    {% endif %}
 
+    {# Recent Attempts #}
     <div class="card">
-        <h3 style="margin-bottom: 16px;">📋 Recent Attempts</h3>
+        <div class="card-header">
+            <span class="card-title">📋 Recent Attempts</span>
+            <a href="{{ url_for('admin.attempts') }}" class="btn btn-ghost btn-sm">View All →</a>
+        </div>
         {% if last_attempts %}
-        <div class="table-responsive">
-            <table class="table-dark">
+        <div class="table-container" style="border:none">
+            <table>
                 <thead>
                     <tr>
                         <th>Student</th>
                         <th>Config</th>
                         <th>Mode</th>
-                        <th>Date</th>
                         <th>Score</th>
                         <th>%</th>
                         <th>Status</th>
@@ -114,39 +109,24 @@
                 </thead>
                 <tbody>
                     {% for a in last_attempts %}
-                    <tr class="clickable-row"
-                        onclick="window.location.href='{{ url_for('admin.attempt_detail', attempt_id=a.id) }}';">
-                        <td>{{ a.user.name if a.user else 'N/A' }}</td>
-                        <td>{{ a.config.name if a.config else 'N/A' }}</td>
-                        <td>
-                            <span class="badge {{ 'badge-exam' if a.mode == 'exam' else 'badge-practice' }}">
-                                {{ '📝' if a.mode == 'exam' else '🎯' }} {{ a.mode|upper }}
-                            </span>
-                        </td>
-                        <td class="mono" style="font-size:.8rem;">{{ a.started_at.strftime('%Y-%m-%d %H:%M') if
-                            a.started_at
-                            else '' }}</td>
-                        <td class="mono">{{ a.score }}/{{ a.max_score }}</td>
-                        <td class="mono">{{ a.percentage }}%</td>
-                        <td>
-                            <span
-                                class="badge {{ 'badge-success' if a.status == 'submitted' else 'badge-warning' if a.status == 'in_progress' else 'badge-danger' }}">
-                                {{ a.status }}
-                            </span>
-                            {% if a.fs_exit_count > 0 or a.tab_switch_count > 0 %}
-                            <span class="violation-badge">🚨</span>
-                            {% endif %}
-                        </td>
+                    <tr>
+                        <td>{{ a.user.name if a.user else '?' }}</td>
+                        <td>{{ a.config.name if a.config else '?' }}</td>
+                        <td><span
+                                class="badge {% if a.mode == 'exam' %}badge-primary{% else %}badge-success{% endif %}">{{
+                                a.mode }}</span></td>
+                        <td class="font-mono">{{ a.score }}/{{ a.max_score }}</td>
+                        <td>{{ a.percentage|round(1) }}%</td>
+                        <td><span
+                                class="badge {% if a.status == 'submitted' %}badge-success{% elif a.status == 'in_progress' %}badge-warning{% else %}badge-muted{% endif %}">{{
+                                a.status }}</span></td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">📋</div>
-            <p>No attempts yet.</p>
-        </div>
+        <p class="text-muted text-sm">No attempts yet.</p>
         {% endif %}
     </div>
 </div>

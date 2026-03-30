@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us — DDCET Portal</title>
+    <meta name="description" content="Get in touch with the DDCET Exam Portal team. We'd love to hear from you.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+
+<body>
+    <nav class="landing-nav">
+        <a href="/" class="navbar-brand">
+            <div class="logo-icon">D</div>
+            <span>DDCET Portal</span>
+        </a>
+        <div class="nav-actions">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-ghost btn-sm">Login</a>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Register Free</a>
+        </div>
+    </nav>
+
+    <section class="page-content animate-fade" style="padding-top:48px">
+        <div class="contact-form">
+            <div class="text-center" style="margin-bottom:32px">
+                <h1>📬 Contact Us</h1>
+                <p class="text-secondary">Have a question, suggestion, or need help? Drop us a message and we'll get
+                    back to you.</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-container" style="position:static;max-width:100%;margin-bottom:16px">
+                {% for category, message in messages %}
+                <div class="flash-msg {{ category }}">
+                    <span>{{ message }}</span>
+                    <button class="flash-close">&times;</button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('contact') }}">
+                <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+                <div class="form-group" style="margin-bottom:16px">
+                    <label class="form-label" for="name">Your Name</label>
+                    <input type="text" id="name" name="name" class="form-input" placeholder="John Doe" required>
+                </div>
+                <div class="form-group" style="margin-bottom:16px">
+                    <label class="form-label" for="email">Your Email</label>
+                    <input type="email" id="email" name="email" class="form-input" placeholder="you@example.com"
+                        required>
+                </div>
+                <div class="form-group" style="margin-bottom:16px">
+                    <label class="form-label" for="subject">Subject</label>
+                    <input type="text" id="subject" name="subject" class="form-input" placeholder="What's this about?"
+                        required>
+                </div>
+                <div class="form-group" style="margin-bottom:20px">
+                    <label class="form-label" for="message">Message</label>
+                    <textarea id="message" name="message" class="form-textarea" placeholder="Write your message here..."
+                        required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg w-100">📤 Send Message</button>
+            </form>
+            <div class="text-center" style="margin-top:24px">
+                <a href="/" class="text-secondary text-sm">← Back to Home</a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="landing-footer">
+        <p>&copy; 2026 DDCET Portal. Built for students, by students.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>

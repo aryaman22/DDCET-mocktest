@@ -4,211 +4,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="DDCET - Diploma to Degree Common Entrance Test Portal">
-    <title>{% block title %}DDCET Exam Portal{% endblock %}</title>
+    <title>{% block title %}DDCET Portal{% endblock %}</title>
+    <meta name="description"
+        content="{% block meta_desc %}DDCET Exam Portal — Mock tests & practice for Diploma to Degree entrance exam{% endblock %}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <style>
-        .nav-item.active {
-            background: var(--primary, #4f46e5);
-            color: #fff !important;
-            border-radius: 6px;
-        }
-    </style>
-    {% block head %}{% endblock %}
+    {% block head_extra %}{% endblock %}
 </head>
 
 <body>
-    {% block nav %}
-    <nav class="nav-light">
-        <a href="/" class="logo">🎓 DDCET Portal</a>
 
-        {% if current_user.is_authenticated %}
-
-        <!-- Desktop nav links (hidden on mobile) -->
-        <div class="nav-desktop-links">
-            {% if current_user.role == 'admin' %}
-            <a href="{{ url_for('admin.dashboard') }}"
-                class="nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">🏠 Dashboard</a>
-            <a href="{{ url_for('admin.banks') }}"
-                class="nav-item {% if request.endpoint and 'bank' in request.endpoint %}active{% endif %}">Banks</a>
-            <a href="{{ url_for('admin.configs') }}"
-                class="nav-item {% if request.endpoint and 'config' in request.endpoint %}active{% endif %}">Configs</a>
-            <a href="{{ url_for('admin.attempts') }}"
-                class="nav-item {% if request.endpoint in ['admin.attempts', 'admin.attempt_detail'] %}active{% endif %}">Attempts</a>
-            <a href="{{ url_for('admin.practice_sessions') }}"
-                class="nav-item {% if request.endpoint == 'admin.practice_sessions' %}active{% endif %}">Sessions</a>
-            <a href="{{ url_for('admin.analytics') }}"
-                class="nav-item {% if request.endpoint and 'analytics' in request.endpoint %}active{% endif %}">Analytics</a>
-            <a href="{{ url_for('admin.users') }}"
-                class="nav-item {% if request.endpoint == 'admin.users' %}active{% endif %}">Users</a>
-            {% else %}
-            <a href="{{ url_for('student.home') }}"
-                class="nav-item {% if request.endpoint == 'student.home' %}active{% endif %}">🏠 Home</a>
-            <a href="{{ url_for('student.leaderboard') }}"
-                class="nav-item {% if request.endpoint == 'student.leaderboard' %}active{% endif %}">🏆 Leaderboard</a>
-            <a href="{{ url_for('student.bookmarks') }}"
-                class="nav-item {% if request.endpoint == 'student.bookmarks' %}active{% endif %}">🔖 Bookmarks</a>
-            {% endif %}
-        </div>
-
-        <!-- Desktop user actions (hidden on mobile) -->
-        <div class="nav-desktop-actions">
-            <a href="{{ url_for('auth.profile') }}" class="nav-user-chip">
-                <span class="user-avatar-sm">{{ current_user.name[0]|upper }}</span>
-                <span class="nav-user-name-sm">{{ current_user.name.split()[0] }}</span>
-            </a>
-            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm"
-                style="color:var(--red);border-color:var(--red);">Logout</a>
-        </div>
-
-        <!-- Mobile hamburger (hidden on desktop) -->
-        <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">
-            <span class="bar"></span>
-            <span class="bar"></span>
-            <span class="bar"></span>
-        </button>
-
-        <!-- Mobile slide-in drawer -->
-        <div class="nav-container" id="navContainer">
-            <div class="nav-side-menu">
-                <div class="side-menu-header">
-                    <span class="logo">🎓 DDCET</span>
-                    <button class="close-menu" id="closeMenu">&times;</button>
-                </div>
-
-                <div class="nav-user-info">
-                    <div class="user-avatar">{{ current_user.name[0]|upper }}</div>
-                    <div class="user-details">
-                        <span class="user-name">{{ current_user.name }}</span>
-                        <span class="user-role badge badge-muted">{{ current_user.role|upper }}</span>
-                    </div>
-                </div>
-
-                <div class="nav-links">
-                    {% if current_user.role == 'admin' %}
-                    <a href="{{ url_for('admin.dashboard') }}"
-                        class="nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">🏠
-                        Dashboard</a>
-                    <a href="{{ url_for('admin.banks') }}"
-                        class="nav-item {% if request.endpoint and 'bank' in request.endpoint %}active{% endif %}">📚
-                        Banks</a>
-                    <a href="{{ url_for('admin.configs') }}"
-                        class="nav-item {% if request.endpoint and 'config' in request.endpoint %}active{% endif %}">⚙️
-                        Configs</a>
-                    <a href="{{ url_for('admin.attempts') }}"
-                        class="nav-item {% if request.endpoint in ['admin.attempts', 'admin.attempt_detail'] %}active{% endif %}">📋
-                        Attempts</a>
-                    <a href="{{ url_for('admin.practice_sessions') }}"
-                        class="nav-item {% if request.endpoint == 'admin.practice_sessions' %}active{% endif %}">🎯
-                        Sessions</a>
-                    <a href="{{ url_for('admin.analytics') }}"
-                        class="nav-item {% if request.endpoint and 'analytics' in request.endpoint %}active{% endif %}">📊
-                        Analytics</a>
-                    <a href="{{ url_for('admin.users') }}"
-                        class="nav-item {% if request.endpoint == 'admin.users' %}active{% endif %}">👥 Users</a>
-                    {% else %}
-                    <a href="{{ url_for('student.home') }}"
-                        class="nav-item {% if request.endpoint == 'student.home' %}active{% endif %}">🏠 Home</a>
-                    <a href="{{ url_for('student.leaderboard') }}"
-                        class="nav-item {% if request.endpoint == 'student.leaderboard' %}active{% endif %}">🏆
-                        Leaderboard</a>
-                    <a href="{{ url_for('student.bookmarks') }}"
-                        class="nav-item {% if request.endpoint == 'student.bookmarks' %}active{% endif %}">🔖
-                        Bookmarks</a>
-                    {% endif %}
-                </div>
-
-                <div class="nav-actions">
-                    <a href="{{ url_for('auth.profile') }}" class="btn btn-outline btn-sm w-100"
-                        style="margin-bottom:8px;">👤 My Profile</a>
-                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline w-100"
-                        style="color:var(--red);border-color:var(--red);">Logout</a>
+    {% if current_user.is_authenticated and current_user.role == 'admin' %}
+    {# ════════════ ADMIN LAYOUT (sidebar) ════════════ #}
+    <div class="admin-layout">
+        <aside class="admin-sidebar" id="admin-sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="logo-icon">D</div>
+                    <span>DDCET</span>
+                    <span class="sidebar-badge">Admin</span>
                 </div>
             </div>
-            <div class="nav-overlay" id="navOverlay"></div>
-        </div>
+            <div class="sidebar-user">
+                <div class="nav-avatar">{{ current_user.name[0]|upper }}</div>
+                <div>
+                    <div class="user-name">{{ current_user.name.split()[0] }}</div>
+                    <div class="user-role">Administrator</div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('admin.dashboard') }}" {% if request.endpoint=='admin.dashboard' %}class="active" {%
+                    endif %}>
+                    <span class="nav-icon">🏠</span> Dashboard</a>
+                <a href="{{ url_for('admin.banks') }}" {% if request.endpoint and 'bank' in request.endpoint
+                    %}class="active" {% endif %}>
+                    <span class="nav-icon">📚</span> Question Banks</a>
+                <a href="{{ url_for('admin.configs') }}" {% if request.endpoint and 'config' in request.endpoint
+                    %}class="active" {% endif %}>
+                    <span class="nav-icon">⚙️</span> Configurations</a>
+                <a href="{{ url_for('admin.attempts') }}" {% if request.endpoint in
+                    ['admin.attempts','admin.attempt_detail'] %}class="active" {% endif %}>
+                    <span class="nav-icon">📋</span> Attempts</a>
+                <a href="{{ url_for('admin.practice_sessions') }}" {% if request.endpoint=='admin.practice_sessions'
+                    %}class="active" {% endif %}>
+                    <span class="nav-icon">🎯</span> Practice Sessions</a>
+                <a href="{{ url_for('admin.analytics') }}" {% if request.endpoint and 'analytics' in request.endpoint
+                    %}class="active" {% endif %}>
+                    <span class="nav-icon">📊</span> Analytics</a>
+                <a href="{{ url_for('admin.users') }}" {% if request.endpoint=='admin.users' %}class="active" {% endif
+                    %}>
+                    <span class="nav-icon">👥</span> Users</a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('auth.logout') }}">🚪 Sign Out</a>
+            </div>
+        </aside>
+        <div class="mobile-drawer-overlay" id="admin-overlay"></div>
 
-        {% endif %}
+        <main class="admin-main">
+            <header class="admin-topbar">
+                <div class="flex items-center gap-12">
+                    <button class="hamburger show-mobile" id="admin-hamburger" aria-label="Menu">
+                        <span></span><span></span><span></span>
+                    </button>
+                    <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                </div>
+                <div class="nav-user hide-mobile">
+                    <span class="text-sm text-secondary">{{ current_user.name }}</span>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-ghost btn-sm">Sign Out</a>
+                </div>
+            </header>
+            <div class="admin-page-content">
+
+                {% elif current_user.is_authenticated %}
+                {# ════════════ STUDENT LAYOUT (top nav + bottom nav) ════════════ #}
+                <nav class="navbar">
+                    <a href="{{ url_for('student.home') }}" class="navbar-brand">
+                        <div class="logo-icon">D</div>
+                        <span class="hide-mobile">DDCET Portal</span>
+                    </a>
+
+                    <div class="nav-links hide-mobile">
+                        <a href="{{ url_for('student.home') }}" {% if request.endpoint=='student.home' %}class="active"
+                            {% endif %}>🏠 Home</a>
+                        <a href="{{ url_for('student.leaderboard') }}" {% if request.endpoint=='student.leaderboard'
+                            %}class="active" {% endif %}>🏆 Leaderboard</a>
+                        <a href="{{ url_for('student.bookmarks') }}" {% if request.endpoint=='student.bookmarks'
+                            %}class="active" {% endif %}>🔖 Bookmarks</a>
+                        <a href="{{ url_for('contact') }}" {% if request.endpoint=='contact' %}class="active" {% endif
+                            %}>📬 Contact Us</a>
+                    </div>
+
+                    <div class="nav-user" style="display:flex;align-items:center;gap:12px;">
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-ghost btn-sm hide-mobile">Sign Out</a>
+                        <a href="{{ url_for('auth.profile') }}" class="nav-avatar hide-mobile" title="Profile">{{
+                            current_user.name[0]|upper }}</a>
+                        <button class="hamburger" id="hamburger-btn" aria-label="Menu">
+                            <span></span><span></span><span></span>
+                        </button>
+                    </div>
+                </nav>
+
+                {# Mobile drawer #}
+                <div class="mobile-drawer-overlay" id="drawer-overlay"></div>
+                <div class="mobile-drawer" id="mobile-drawer">
+                    <div class="drawer-header">
+                        <div class="drawer-user">
+                            <div class="drawer-avatar">{{ current_user.name[0]|upper }}</div>
+                            <div>
+                                <div class="font-bold">{{ current_user.name }}</div>
+                                <div class="text-xs text-muted">{{ current_user.engineering_branch }}</div>
+                            </div>
+                        </div>
+                        <button class="close-drawer" id="close-drawer">&times;</button>
+                    </div>
+                    <div class="drawer-links">
+                        <a href="{{ url_for('student.home') }}"><span>🏠</span> Home</a>
+                        <a href="{{ url_for('student.leaderboard') }}"><span>🏆</span> Leaderboard</a>
+                        <a href="{{ url_for('student.bookmarks') }}"><span>🔖</span> Bookmarks</a>
+                        <a href="{{ url_for('contact') }}"><span>📬</span> Contact Us</a>
+                        <a href="{{ url_for('auth.profile') }}"><span>👤</span> My Profile</a>
+                        <a href="{{ url_for('auth.logout') }}"><span>🚪</span> Sign Out</a>
+                    </div>
+                </div>
+                <div class="student-content">
+                    {% endif %}
+
+                    {# ════════════ FLASH MESSAGES (All Layouts) ════════════ #}
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    <div class="flash-container">
+                        {% for category, message in messages %}
+                        <div class="flash-msg {{ category }}">
+                            <span>{{ message }}</span>
+                            <button class="flash-close">&times;</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+
+                    {# ════════════ MAIN CONTENT BLOCK ════════════ #}
+                    {% block content %}{% endblock %}
+
+                    {# ════════════ CLOSE WRAPPERS ════════════ #}
+                    {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                </div> <!-- end admin-page-content -->
+        </main>
+    </div> <!-- end admin-layout -->
+
+    {% elif current_user.is_authenticated %}
+    </div> <!-- end student-content -->
+
+    {# Mobile bottom navigation #}
+    <nav class="bottom-nav">
+        <a href="{{ url_for('student.home') }}" {% if request.endpoint=='student.home' %}class="active" {% endif %}>
+            <span class="nav-icon">🏠</span>Home</a>
+        <a href="{{ url_for('student.leaderboard') }}" {% if request.endpoint=='student.leaderboard' %}class="active" {%
+            endif %}>
+            <span class="nav-icon">🏆</span>Leaderboard</a>
+        <a href="{{ url_for('student.bookmarks') }}" {% if request.endpoint=='student.bookmarks' %}class="active" {%
+            endif %}>
+            <span class="nav-icon">🔖</span>Bookmarks</a>
+        <a href="{{ url_for('auth.profile') }}" {% if request.endpoint=='auth.profile' %}class="active" {% endif %}>
+            <span class="nav-icon">👤</span>Profile</a>
     </nav>
-    {% endblock %}
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <div class="flash-container">
-        {% for category, message in messages %}
-        <div class="flash flash-{{ category }}">
-            {% if category == 'success' %}✅{% elif category == 'error' %}❌{% elif category == 'warning' %}⚠️{% else
-            %}ℹ️{% endif %}
-            {{ message }}
-        </div>
-        {% endfor %}
-    </div>
     {% endif %}
-    {% endwith %}
 
-    {% block content %}{% endblock %}
-
-    {% block scripts %}
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const menuToggle = document.getElementById('menuToggle');
-            const closeMenu = document.getElementById('closeMenu');
-            const navContainer = document.getElementById('navContainer');
-            const navOverlay = document.getElementById('navOverlay');
-
-            if (!navContainer) return;
-
-            function openMenu() {
-                navContainer.classList.add('active');
-                document.body.style.overflow = 'hidden'; // prevent background scroll
-            }
-
-            function closeMenuFn() {
-                navContainer.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-
-            function toggleMenu() {
-                if (navContainer.classList.contains('active')) {
-                    closeMenuFn();
-                } else {
-                    openMenu();
-                }
-            }
-
-            if (menuToggle) menuToggle.addEventListener('click', toggleMenu);
-            if (closeMenu) closeMenu.addEventListener('click', closeMenuFn);
-            if (navOverlay) navOverlay.addEventListener('click', closeMenuFn);
-
-            // Close menu when a nav link is tapped on mobile
-            navContainer.querySelectorAll('.nav-item').forEach(link => {
-                link.addEventListener('click', closeMenuFn);
-            });
-
-            // Close menu on resize to desktop
-            window.addEventListener('resize', () => {
-                if (window.innerWidth > 768) closeMenuFn();
-            });
-        });
-    </script>
-    {% endblock %}
-
-    <!-- AJ signature -->
-    <div style="
-        position: fixed;
-        bottom: 10px;
-        left: 12px;
-        font-size: 12px;
-        font-weight: 700;
-        font-family: var(--font-mono, monospace);
-        color: var(--primary, #e8480a);
-        opacity: 0.35;
-        letter-spacing: 0.12em;
-        user-select: none;
-        pointer-events: none;
-        z-index: 9999;
-    ">made by AJ</div>
-
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
 </body>
 
 </html>

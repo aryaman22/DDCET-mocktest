@@ -1,194 +1,128 @@
 {% extends "base.html" %}
-{% block title %}Exam Result — DDCET{% endblock %}
-{% block head %}
-<style>
-    @media (max-width: 600px) {
-        .result-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 10px !important;
-        }
+{% block title %}Result — DDCET{% endblock %}
 
-        .result-stat .value {
-            font-size: 1.1rem !important;
-        }
-
-        .review-options {
-            grid-template-columns: 1fr !important;
-        }
-
-        .review-header {
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .tabs {
-            flex-wrap: wrap;
-        }
-
-        .tab-btn {
-            flex: 1;
-            min-width: 120px;
-            font-size: 13px;
-        }
-    }
-</style>
-{% endblock %}
 {% block content %}
-<div class="main-content" style="max-width: 900px; margin: 0 auto;">
-    <div class="result-header">
-        <h1>📊 Exam Result</h1>
-        <p class="text-muted">{{ config.name if config else 'Exam' }} · {{ attempt.submitted_at | ist if
-            attempt.submitted_at else '' }}</p>
-
-        <!-- Progress Ring -->
-        <div class="progress-ring-container" style="margin: 30px 0;">
-            <svg width="160" height="160" viewBox="0 0 160 160">
-                <circle class="progress-ring-bg" cx="80" cy="80" r="65" />
-                <circle class="progress-ring-fill" cx="80" cy="80" r="65"
-                    stroke="{{ 'var(--green)' if attempt.percentage >= 50 else 'var(--red)' }}"
-                    stroke-dasharray="{{ 2 * 3.14159 * 65 }}"
-                    stroke-dashoffset="{{ 2 * 3.14159 * 65 * (1 - attempt.percentage / 100) }}"
-                    transform="rotate(-90 80 80)" />
-                <text x="80" y="74" text-anchor="middle" class="progress-ring-text">{{ attempt.percentage }}%</text>
-                <text x="80" y="94" text-anchor="middle" class="progress-ring-label">Score</text>
+<div class="animate-fade">
+    {# Score Hero #}
+    <div class="result-hero">
+        <div class="score-ring">
+            <svg viewBox="0 0 120 120">
+                <circle class="ring-bg" cx="60" cy="60" r="52" />
+                <circle class="ring-fill" cx="60" cy="60" r="52"
+                    stroke="{% if attempt.percentage >= 50 %}var(--green){% else %}var(--red){% endif %}"
+                    stroke-dasharray="326.73" stroke-dashoffset="{{ 326.73 - (326.73 * attempt.percentage / 100) }}"
+                    id="score-ring-fill" />
             </svg>
+            <div class="score-text">
+                <div class="score-pct">{{ attempt.percentage|round(1) }}%</div>
+                <div class="score-label">Score</div>
+            </div>
         </div>
+        <h2 class="font-mono" style="margin-bottom:8px">{{ attempt.score }} / {{ attempt.max_score }}</h2>
+        <p class="text-secondary">{{ config.name }}</p>
     </div>
 
-    <div class="result-grid">
-        <div class="result-stat">
-            <div class="value mono">{{ attempt.score }}/{{ attempt.max_score }}</div>
-            <div class="label">Total Score</div>
-        </div>
-        <div class="result-stat">
-            <div class="value mono text-green">{{ attempt.correct_count }}</div>
-            <div class="label">Correct</div>
-        </div>
-        <div class="result-stat">
-            <div class="value mono text-red">{{ attempt.wrong_count }}</div>
-            <div class="label">Wrong</div>
-        </div>
-        <div class="result-stat">
-            <div class="value mono text-muted">{{ attempt.unattempted }}</div>
-            <div class="label">Unattempted</div>
-        </div>
-        <div class="result-stat">
-            <div class="value mono text-yellow">{{ attempt.bonus_count }}</div>
-            <div class="label">Bonus</div>
-        </div>
-        <div class="result-stat">
-            <div class="value mono">{{ (attempt.time_taken_sec // 60) }}m {{ attempt.time_taken_sec % 60 }}s</div>
-            <div class="label">Time Taken</div>
-        </div>
-    </div>
-
-    <!-- Feature 4: Rank Predictor -->
+    {# Rank Predictor #}
     {% if rank_estimation %}
-    <div class="result-rank-predictor"
-        style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, var(--bg-hover) 0%, rgba(34, 197, 94, 0.1) 100%); border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
-        <div>
-            <h3 style="margin: 0 0 5px 0; color: var(--green);">🌟 Estimated Rank: #{{ rank_estimation.rank }}</h3>
-            <p class="text-muted" style="margin: 0; font-size: 0.9rem;">Out of {{ rank_estimation.total_students }}
-                students who took this exam</p>
+    <div class="rank-card">
+        <div style="font-size:1.1rem;margin-bottom:8px">🏆 Your Estimated Rank</div>
+        <div class="rank-number">#{{ rank_estimation.rank }} <span class="text-secondary text-sm font-normal">out of {{
+                rank_estimation.total_students }} students</span></div>
+        <div class="progress-bar" style="margin:12px auto;max-width:300px">
+            <div class="progress-fill indigo" style="width:{{ rank_estimation.percentile }}%"></div>
         </div>
-        <div style="text-align: right;">
-            <div style="font-size: 1.8rem; font-weight: bold; font-family: var(--font-mono);">{{
-                rank_estimation.percentile }}<span style="font-size: 1rem;">%ile</span></div>
-            <p class="text-muted" style="margin: 0; font-size: 0.8rem;">Percentile</p>
-        </div>
+        <div class="text-sm text-secondary">Top {{ (100 - rank_estimation.percentile)|round(1) }}% percentile</div>
     </div>
     {% endif %}
 
-    <!-- Tabs -->
-    <div class="tabs">
-        <button class="tab-btn active" data-tab="tab-topics">📊 Topic Analysis</button>
-        <button class="tab-btn" data-tab="tab-review">📝 Review Answers</button>
-    </div>
-
-    <!-- Topic Analysis -->
-    <div id="tab-topics" class="tab-content active">
-        <div class="chart-container">
-            <div style="position:relative; width:100%; overflow-x:auto;">
-                <div class="bar-chart" id="topic-chart" style="min-height:220px; padding-bottom:30px; min-width:300px;">
-                </div>
-            </div>
+    {# Stats Grid #}
+    <div class="result-stats">
+        <div class="result-stat">
+            <div class="stat-value" style="color:var(--green)">{{ attempt.correct }}</div>
+            <div class="stat-label">✅ Correct</div>
+        </div>
+        <div class="result-stat">
+            <div class="stat-value" style="color:var(--red)">{{ attempt.wrong }}</div>
+            <div class="stat-label">❌ Wrong</div>
+        </div>
+        <div class="result-stat">
+            <div class="stat-value">{{ attempt.skipped }}</div>
+            <div class="stat-label">— Skipped</div>
         </div>
     </div>
 
-    <!-- Review Answers -->
-    <div id="tab-review" class="tab-content">
-        {% for q in review %}
+    {# Tabs #}
+    <div class="review-tabs">
+        <div class="review-tab active" onclick="showTab('topics')">📊 Topic Analysis</div>
+        <div class="review-tab" onclick="showTab('review')">📝 Review Answers</div>
+    </div>
+
+    {# Topic Analysis #}
+    <div id="tab-topics" class="page-content">
+        <div class="topic-bar-chart">
+            {# Rendered by JS from topic_chart JSON #}
+        </div>
+    </div>
+
+    {# Answer Review #}
+    <div id="tab-review" class="page-content" style="display:none">
+        {% for item in review %}
         <div
-            class="review-item {{ 'correct-review' if q.is_correct else 'wrong-review' if q.given_answer else 'unanswered-review' }}">
-            <div class="review-header">
-                <div>
-                    <span class="question-number">Q{{ q.qno_display }}</span>
-                    <span class="badge badge-muted">S{{ q.section }}</span>
-                    <span class="badge badge-muted">{{ q.topic }}</span>
-                </div>
-                <div>
-                    {% if q.correct_ans == 'X' %}
-                    <span class="badge badge-warning">Bonus +{{ q.marks }}</span>
-                    {% elif q.is_correct %}
-                    <span class="badge badge-success">✅ +{{ q.marks }}</span>
-                    {% elif q.given_answer %}
-                    <span class="badge badge-danger">❌ {{ q.marks }}</span>
-                    {% else %}
-                    <span class="badge badge-muted">— Skipped</span>
-                    {% endif %}
-                </div>
+            class="review-item {% if item.is_correct %}correct{% elif item.given_answer %}wrong{% else %}skipped{% endif %}">
+            <div class="flex items-center gap-8" style="margin-bottom:8px">
+                <span class="font-bold text-sm">Q{{ item.qno_display }}</span>
+                <span class="chip">{{ item.section }}</span>
+                <span class="chip">{{ item.topic }}</span>
+                {% if item.is_correct %}<span class="badge badge-success">Correct</span>
+                {% elif item.given_answer %}<span class="badge badge-danger">Wrong</span>
+                {% else %}<span class="badge badge-muted">Skipped</span>{% endif %}
             </div>
-            <p style="margin: 8px 0;">{{ q.question }}</p>
-            <div class="review-options">
-                {% for opt in ['A', 'B', 'C', 'D'] %}
-                <div
-                    class="review-option {{ 'correct-opt' if opt == q.correct_ans else 'wrong-opt' if opt == q.given_answer and opt != q.correct_ans else '' }}">
-                    <strong>{{ opt }}:</strong> {{ q['option_' + opt|lower] }}
-                    {% if opt == q.correct_ans %} ✅{% endif %}
-                    {% if opt == q.given_answer and opt != q.correct_ans %} ❌{% endif %}
+            <div style="font-size:.95rem;margin-bottom:12px">{{ item.question }}</div>
+            <div class="options-list" style="gap:6px">
+                {% for opt in ['A','B','C','D'] %}
+                <div class="option-btn locked {% if opt == item.correct_ans %}correct{% endif %} {% if opt == item.given_answer and not item.is_correct %}wrong{% endif %}"
+                    style="cursor:default;padding:10px 14px;min-height:auto">
+                    <span class="option-label" style="width:28px;height:28px;font-size:.8rem">{{ opt }}</span>
+                    <span class="text-sm">{{ item['option_' ~ opt|lower] }}</span>
                 </div>
                 {% endfor %}
             </div>
-            {% if q.explanation %}
-            <div class="review-explanation">💡 {{ q.explanation }}</div>
+            {% if item.explanation %}
+            <div class="feedback-box"
+                style="margin-top:10px;background:var(--blue-light);border:1px solid var(--blue);color:#1e40af">
+                💡 {{ item.explanation }}
+            </div>
             {% endif %}
         </div>
         {% endfor %}
     </div>
 
-    <div style="text-align: center; margin: 30px 0;">
-        <a href="{{ url_for('student.home') }}" class="btn btn-primary">🏠 Back to Home</a>
+    <div class="text-center" style="padding:24px">
+        <a href="{{ url_for('student.home') }}" class="btn btn-primary">← Back to Home</a>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-    const topicChart = {{ topic_chart | safe }};
-
-    document.addEventListener('DOMContentLoaded', () => {
-        // Tabs
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById(btn.dataset.tab)?.classList.add('active');
-            });
-        });
-
-        // Topic chart
-        const container = document.getElementById('topic-chart');
-        if (container && topicChart.length > 0) {
-            container.innerHTML = topicChart.map(d => {
-                const h = Math.max((d.accuracy / 100) * 170, 4);
-                const color = d.accuracy >= 70 ? 'var(--green)' : d.accuracy >= 40 ? 'var(--yellow)' : 'var(--red)';
-                return `<div class="bar" style="height:${h}px; background:${color};">
-                <span class="bar-value">${d.accuracy}%</span>
-                <span class="bar-label">${d.topic.substring(0, 10)}</span>
-            </div>`;
-            }).join('');
-        } else if (container) {
-            container.innerHTML = '<p class="text-muted" style="text-align:center;padding:40px;">No topic data</p>';
-        }
-    });
+    function showTab(tab) {
+        document.querySelectorAll('.review-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-topics').style.display = tab === 'topics' ? '' : 'none';
+        document.getElementById('tab-review').style.display = tab === 'review' ? '' : 'none';
+        event.target.classList.add('active');
+    }
+    // Render topic chart
+    const topicData = {{ topic_chart| safe }};
+    const chartEl = document.querySelector('.topic-bar-chart');
+    if (chartEl && topicData.length) {
+        chartEl.innerHTML = topicData.map(t => `
+        <div class="topic-bar">
+            <span class="topic-name">${t.topic}</span>
+            <div class="bar-container"><div class="bar-fill" style="width:${t.accuracy}%;background:${t.accuracy >= 70 ? 'var(--green)' : t.accuracy >= 40 ? 'var(--yellow)' : 'var(--red)'}"></div></div>
+            <span class="bar-pct">${t.accuracy}%</span>
+        </div>`).join('');
+    } else if (chartEl) {
+        chartEl.innerHTML = '<div class="empty-state"><p>No topic data available.</p></div>';
+    }
 </script>
 {% endblock %}

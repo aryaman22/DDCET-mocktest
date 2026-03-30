@@ -1,45 +1,46 @@
 {% extends "base.html" %}
-{% block title %}Upload Questions — {{ bank.name }} — DDCET Admin{% endblock %}
-{% block content %}
-<div class="main-content">
-    <h1 style="margin-bottom: 24px;">📤 Upload Questions to "{{ bank.name }}"</h1>
+{% block title %}Upload Questions — DDCET{% endblock %}
+{% block page_title %}Upload Questions{% endblock %}
 
-    <div class="card" style="max-width: 600px;">
-        <form method="POST" action="{{ url_for('admin.upload_questions', bank_id=bank.id) }}"
-            enctype="multipart/form-data">
+{% block content %}
+<div class="animate-fade" style="max-width:600px">
+    <a href="{{ url_for('admin.bank_questions', bank_id=bank.id) }}" class="btn btn-ghost btn-sm"
+        style="margin-bottom:16px">← Back to {{ bank.name }}</a>
+
+    <div class="card">
+        <h3 style="margin-bottom:16px">📤 Upload Questions to "{{ bank.name }}"</h3>
+
+        <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
 
-            <div class="info-box info-box-blue" style="margin-bottom: 20px;">
-                ℹ️ Upload a CSV, JSON, or Excel (.xlsx) file containing your questions. Max file size: 5MB.
+            <div class="file-upload-zone" onclick="document.getElementById('file-input').click()">
+                <div class="upload-icon">📁</div>
+                <p class="font-medium" id="file-name">Click to choose a file or drag & drop</p>
+                <p class="text-sm text-muted">Accepted: CSV, JSON, Excel (.xlsx)</p>
+                <input type="file" id="file-input" name="file" accept=".csv,.json,.xlsx" style="display:none" required>
             </div>
 
-            <div class="form-group">
-                <label for="file">Select File (CSV, JSON, or Excel)</label>
-                <input type="file" name="file" id="file" class="form-control" accept=".csv,.json,.xlsx" required>
+            <div class="card" style="margin-top:16px;padding:12px 16px;background:var(--surface2)">
+                <div class="text-sm font-bold" style="margin-bottom:8px">📋 Required Columns</div>
+                <code class="text-xs" style="font-family:var(--font-mono);color:var(--text-secondary)">
+                    qno, section, topic, question, option_a, option_b, option_c, option_d, correct_ans, explanation
+                </code>
             </div>
 
-            <div class="btn-group">
-                <button type="submit" class="btn btn-primary">📤 Upload & Import</button>
-                <a href="{{ url_for('admin.sample_csv') }}" class="btn btn-outline">📥 Download Sample CSV</a>
-                <a href="{{ url_for('admin.bank_questions', bank_id=bank.id) }}" class="btn btn-outline">Cancel</a>
-            </div>
+            <button type="submit" class="btn btn-primary w-100" style="margin-top:16px">📤 Upload & Import</button>
         </form>
-    </div>
 
-    <div class="card mt-3" style="max-width: 600px;">
-        <h3 style="margin-bottom: 12px;">📋 Expected Format</h3>
-        <p class="text-muted" style="margin-bottom: 12px;">CSV / Excel columns (case-insensitive):</p>
-        <code
-            style="display: block; background: var(--surface2); padding: 12px; border-radius: var(--radius); font-size: .8rem; color: var(--accent2);">
-            qno, section, topic, question, option_a, option_b, option_c, option_d, correct_ans, explanation
-        </code>
-        <p class="text-muted mt-2" style="font-size: .85rem;">
-            • <strong>correct_ans</strong>: A, B, C, D, or X (bonus)<br>
-            • <strong>section</strong>: 1 or 2 (defaults to 1)<br>
-            • <strong>topic</strong>: defaults to "General" if empty<br>
-            • <strong>explanation</strong>: optional<br>
-            • <strong>Excel</strong>: First row must be headers (same column names as above)
-        </p>
+        <div style="margin-top:12px;text-align:center">
+            <a href="{{ url_for('admin.sample_csv') }}" class="text-sm">📥 Download Sample CSV</a>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('file-input')?.addEventListener('change', function () {
+        document.getElementById('file-name').textContent = this.files[0]?.name || 'Click to choose a file';
+    });
+</script>
 {% endblock %}

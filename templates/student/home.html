@@ -1,162 +1,170 @@
 {% extends "base.html" %}
-{% block title %}Student Home — DDCET{% endblock %}
-{% block content %}
-<div class="main-content">
-    <h1 style="margin-bottom: 30px;">Welcome, {{ current_user.name }} 👋</h1>
+{% block title %}Home — DDCET{% endblock %}
 
-    {% if not exam_data and not practice_data %}
-    <div class="empty-state">
-        <div class="empty-icon">📚</div>
-        <h3>No exams or practice sets are available yet</h3>
-        <p>Check back later! Your admin hasn't set up any tests yet.</p>
+{% block content %}
+<div class="page-content animate-fade">
+    {# Welcome Banner #}
+    <div class="card" style="margin-bottom:24px;background:linear-gradient(135deg,var(--primary-light),var(--surface))">
+        <div class="flex items-center gap-16 flex-wrap">
+            <div class="nav-avatar" style="width:56px;height:56px;font-size:1.5rem">{{ current_user.name[0]|upper }}
+            </div>
+            <div>
+                <h2 style="margin-bottom:4px">Welcome, {{ current_user.name.split()[0] }}! 👋</h2>
+                <span class="badge badge-primary">{{ current_user.engineering_branch }}</span>
+            </div>
+        </div>
+    </div>
+
+    {# Weak Topics Alert #}
+    {% if weak_topics %}
+    <div class="card" style="margin-bottom:24px">
+        <div class="card-header">
+            <span class="card-title">📉 Topics Needing Attention</span>
+        </div>
+        {% for t in weak_topics %}
+        <div class="weak-topic-item">
+            <span class="weak-topic-name">{{ t.name }}</span>
+            <div class="weak-topic-bar">
+                <div class="progress-fill {% if t.accuracy < 40 %}red{% elif t.accuracy < 60 %}yellow{% else %}green{% endif %}"
+                    style="width:{{ t.accuracy }}%"></div>
+            </div>
+            <span
+                class="weak-topic-pct {% if t.accuracy < 40 %}text-danger{% elif t.accuracy < 60 %}text-warning{% endif %}">{{
+                t.accuracy }}%</span>
+        </div>
+        {% endfor %}
     </div>
     {% endif %}
 
-    <!-- ═══ SECTION: Weak Topics (Feature 5) ═══ -->
-    {% if weak_topics and weak_topics|length > 0 %}
-    <div class="home-section" style="margin-bottom: 30px;">
-        <div class="card" style="border-left: 4px solid var(--red);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin: 0; color: var(--red);">⚠️ Focus Areas</h3>
-                <span class="badge badge-error">Low Accuracy Detected</span>
+    {# Mock Exams Section #}
+    <div class="section-header">
+        <h3 class="section-title">📝 Mock Exams</h3>
+    </div>
+    {% if exam_data %}
+    <div class="grid grid-2 gap-16" style="margin-bottom:32px">
+        {% for ed in exam_data %}
+        <div class="exam-card">
+            <div class="exam-title">
+                {{ ed.config.name }}
+                {% if ed.status == 'completed' %}
+                <span class="badge badge-success">Completed</span>
+                {% elif ed.status == 'in_progress' %}
+                <span class="badge badge-warning">In Progress</span>
+                {% else %}
+                <span class="badge badge-primary">Available</span>
+                {% endif %}
             </div>
-            <p class="text-muted" style="font-size: 0.9rem; margin-top: 0;">Based on your recent mock exams, you should
-                review these topics:</p>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
-                {% for topic in weak_topics %}
-                <div
-                    style="background: var(--bg-hover); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); flex: 1; min-width: 150px;">
-                    <div style="font-weight: 600; font-size: 0.95rem;">{{ topic.name }}</div>
-                    <div style="color: var(--red); font-weight: bold; font-size: 1.1rem; margin-top: 5px;">{{
-                        topic.accuracy }}%</div>
-                </div>
+            <div class="exam-meta">
+                <span>📝 {{ ed.config.total_questions }} questions</span>
+                <span>⏱ {{ ed.config.duration_minutes }} min</span>
+                <span>+{{ ed.config.marks_correct }}/−{{ ed.config.marks_wrong }}</span>
+            </div>
+            {% if ed.bank_names %}
+            <div style="margin-bottom:12px">
+                {% for bn in ed.bank_names.split(', ')[:3] %}
+                <span class="chip" style="margin:2px">{{ bn }}</span>
                 {% endfor %}
             </div>
+            {% endif %}
+            {% if ed.status == 'completed' %}
+            <a href="{{ url_for('student.result', attempt_id=ed.attempt_id) }}" class="btn btn-outline w-100">📊 View
+                Result</a>
+            {% elif ed.status == 'in_progress' %}
+            <form method="POST" action="{{ url_for('student.start_exam', config_id=ed.config.id) }}" style="margin:0">
+                <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+                <button type="submit" class="btn btn-warning w-100">▶ Resume Exam</button>
+            </form>
+            {% else %}
+            <a href="{{ url_for('student.exam_instructions', config_id=ed.config.id) }}" class="btn btn-primary w-100">▶
+                Start Exam</a>
+            {% endif %}
         </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state card" style="margin-bottom:32px">
+        <div class="empty-icon">📝</div>
+        <p>No exam configurations available yet.</p>
     </div>
     {% endif %}
 
-    <!-- ═══ SECTION A: Mock Exams ═══ -->
-    {% if exam_data %}
-    <div class="home-section section-exam">
-        <div class="home-section-header">
-            <h2>📝 Mock Exams</h2>
-            <span class="badge badge-exam">{{ exam_data|length }} available</span>
-        </div>
-        <div class="config-cards">
-            {% for item in exam_data %}
-            <div class="config-card">
-                <h3>{{ item.config.name }}</h3>
-                <div class="config-meta">
-                    <span>📝 {{ item.config.total_questions }} q</span>
-                    <span>⏱ {{ item.config.duration_minutes }} m</span>
-                    <span>📊 +{{ item.config.marks_correct }}/−{{ item.config.marks_wrong }}</span>
-                    {% if item.config.end_date %}
-                    <span style="color: var(--yellow);">⏳ Due: {{ item.config.end_date.strftime('%b %d, %H:%M')
-                        }}</span>
-                    {% endif %}
-                </div>
-                <p class="text-muted"
-                    style="font-size:.85rem; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    📚 {{ item.bank_names }}</p>
-                <div class="config-footer">
-                    {% if item.status == 'completed' %}
-                    <a href="{{ url_for('student.result', attempt_id=item.attempt_id) }}"
-                        class="btn btn-success btn-sm">✓ Completed — View Result</a>
-                    {% elif item.status == 'in_progress' %}
-                    <a href="{{ url_for('student.start_exam', config_id=item.config.id) }}"
-                        class="btn btn-warning btn-sm">▶ Resume / Re-enter Exam</a>
-                    {% else %}
-                    <a href="{{ url_for('student.exam_instructions', config_id=item.config.id) }}"
-                        class="btn btn-primary btn-sm">▶ Start Exam</a>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
+    {# Practice Sets Section #}
+    <div class="section-header">
+        <h3 class="section-title">🎯 Practice Sets</h3>
     </div>
-    {% endif %}
-
-    <!-- ═══ SECTION B: Practice Sets ═══ -->
     {% if practice_data %}
-    <div class="home-section section-practice">
-        <div class="home-section-header">
-            <h2>🎯 Practice Sets</h2>
-            <span class="badge badge-practice">{{ practice_data|length }} available</span>
-        </div>
-        <div class="config-cards">
-            {% for item in practice_data %}
-            <div class="config-card">
-                <h3>{{ item.config.name }}</h3>
-                <div class="config-meta">
-                    <span>📝 {{ item.config.total_questions }} questions</span>
-                    <span>⏱ Unlimited</span>
-                    {% if item.topics %}
-                    <span>🏷 {{ item.topics[:3]|join(', ') }}{% if item.topics|length > 3 %} +{{ item.topics|length - 3
-                        }}{% endif %}</span>
-                    {% endif %}
-                </div>
-                <p class="text-muted" style="font-size:.85rem; margin-bottom: 12px;">📚 {{ item.bank_names }}</p>
-                {% if item.total_answered > 0 %}
-                <div class="info-box info-box-green" style="font-size: .8rem;">
-                    Lifetime Accuracy: {{ item.accuracy }}% ({{ item.total_correct }}/{{ item.total_answered }})
-                </div>
+    <div class="grid grid-2 gap-16" style="margin-bottom:32px">
+        {% for pd in practice_data %}
+        <div class="practice-card">
+            <div class="exam-title">
+                {{ pd.config.name }}
+                {% if pd.topics %}
+                <span class="badge badge-muted">{{ pd.topics|length }} topics</span>
                 {% endif %}
-                <div class="config-footer">
-                    <form action="{{ url_for('student.start_practice', config_id=item.config.id) }}" method="POST"
-                        style="display:inline;">
-                        <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
-                        <button type="submit" class="btn btn-success btn-sm">▶ Start Practice</button>
-                    </form>
-                </div>
             </div>
-            {% endfor %}
+            <div class="exam-meta">
+                <span>📝 {{ pd.config.total_questions }} questions</span>
+                <span>⏱ Unlimited</span>
+            </div>
+            {% if pd.total_answered > 0 %}
+            <div style="margin:12px 0">
+                <div class="flex justify-between text-sm" style="margin-bottom:4px">
+                    <span>Accuracy</span>
+                    <span class="font-mono font-bold">{{ pd.accuracy }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill {% if pd.accuracy >= 70 %}green{% elif pd.accuracy >= 40 %}yellow{% else %}red{% endif %}"
+                        style="width:{{ pd.accuracy }}%"></div>
+                </div>
+                <div class="text-xs text-muted" style="margin-top:4px">{{ pd.total_correct }}/{{ pd.total_answered }}
+                    correct</div>
+            </div>
+            {% endif %}
+            <a href="{{ url_for('student.practice_instructions', config_id=pd.config.id) }}"
+                class="btn btn-success w-100">🎯 Start Practice</a>
         </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state card" style="margin-bottom:32px">
+        <div class="empty-icon">🎯</div>
+        <p>No practice sets available yet.</p>
     </div>
     {% endif %}
 
-    <!-- ═══ SECTION C: History ═══ -->
+    {# Recent History #}
     {% if history %}
-    <div class="home-section">
-        <div class="home-section-header">
-            <h2>📊 My History</h2>
-        </div>
-        <div class="table-responsive">
-            <table class="table-dark">
-                <thead>
-                    <tr>
-                        <th>Exam</th>
-                        <th>Date</th>
-                        <th>Score</th>
-                        <th>%</th>
-                        <th>Status</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for a in history %}
-                    <tr>
-                        <td>{{ a.config.name if a.config else 'N/A' }}</td>
-                        <td class="mono" style="font-size:.8rem;">{{ a.started_at | ist }}</td>
-                        <td class="mono">{{ a.score }}/{{ a.max_score }}</td>
-                        <td class="mono {{ 'text-green' if a.percentage >= 50 else 'text-red' }}">{{ a.percentage }}%
-                        </td>
-                        <td>
-                            <span class="badge {{ 'badge-success' if a.status == 'submitted' else 'badge-warning' }}">{{
-                                a.status }}</span>
-                        </td>
-                        <td>
-                            {% if a.status in ['submitted', 'timeout'] %}
-                            <a href="{{ url_for('student.result', attempt_id=a.id) }}"
-                                class="btn btn-outline btn-sm">View
-                                Result</a>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="section-header">
+        <h3 class="section-title">📋 Recent History</h3>
+    </div>
+    <div class="table-container" style="margin-bottom:32px">
+        <table class="table-responsive">
+            <thead>
+                <tr>
+                    <th>Exam</th>
+                    <th>Date</th>
+                    <th>Score</th>
+                    <th>Percentage</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for att in history[:10] %}
+                <tr>
+                    <td data-label="Exam">{{ att.config.name if att.config else 'N/A' }}</td>
+                    <td data-label="Date">{{ att.started_at|ist }}</td>
+                    <td data-label="Score" class="font-mono">{{ att.score }}/{{ att.max_score }}</td>
+                    <td data-label="Percentage">
+                        <span class="badge {% if att.percentage >= 50 %}badge-success{% else %}badge-danger{% endif %}">
+                            {{ att.percentage|round(1) }}%
+                        </span>
+                    </td>
+                    <td><a href="{{ url_for('student.result', attempt_id=att.id) }}" class="btn btn-ghost btn-sm">View
+                            →</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
     {% endif %}
 </div>

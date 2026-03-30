@@ -2,57 +2,35 @@
 {% block title %}Leaderboard — DDCET{% endblock %}
 
 {% block content %}
-<div class="main-content" style="max-width: 900px; margin: 0 auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-        <h1 style="margin: 0;">🏆 Global Leaderboard</h1>
-        <span class="badge badge-primary">Ranked by Total Score</span>
+<div class="page-content animate-fade">
+    <div class="leaderboard-header">
+        <h2>🏆 Student Leaderboard</h2>
+        <p class="text-secondary">Ranked by cumulative exam performance</p>
     </div>
 
     {% if leaderboard %}
-    <div class="card" style="padding: 0; overflow: hidden;">
-        <div class="table-responsive" style="margin: 0;">
-            <table class="table-dark" style="margin: 0; min-width: 600px;">
-                <thead>
-                    <tr>
-                        <th style="width: 80px; text-align: center;">Rank</th>
-                        <th>Student Name</th>
-                        <th>Branch</th>
-                        <th style="text-align: right;">Total Score</th>
-                        <th style="text-align: right;">Avg %</th>
-                        <th style="text-align: center;">Exams</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for student in leaderboard %}
-                    <tr
-                        style="{% if student.name == current_user.name %}background: rgba(79, 70, 229, 0.15); border-left: 4px solid var(--primary);{% endif %}">
-                        <td style="text-align: center; font-weight: bold; font-size: 1.2rem;">
-                            {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else
-                            %}#{{ loop.index }}{% endif %}
-                        </td>
-                        <td style="font-weight: 500;">
-                            {{ student.name }}
-                            {% if student.name == current_user.name %}<span class="badge badge-primary"
-                                style="margin-left: 8px; font-size: 0.7rem; padding: 2px 6px;">You</span>{% endif %}
-                        </td>
-                        <td class="text-muted" style="font-size: 0.9rem;">{{ student.branch or 'N/A' }}</td>
-                        <td
-                            style="text-align: right; font-family: var(--font-mono); color: var(--green); font-weight: bold;">
-                            {{ student.total_score }}</td>
-                        <td style="text-align: right; font-family: var(--font-mono);">{{ student.avg_percent }}%</td>
-                        <td style="text-align: center; font-family: var(--font-mono); color: var(--muted);">{{
-                            student.exams_taken }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="leaderboard-list">
+        {% for s in leaderboard %}
+        {% set rank = loop.index %}
+        <div
+            class="lb-item {% if rank == 1 %}gold{% elif rank == 2 %}silver{% elif rank == 3 %}bronze{% endif %} {% if s.name == current_user.name %}you{% endif %}">
+            <div class="lb-rank">
+                {% if rank == 1 %}🥇{% elif rank == 2 %}🥈{% elif rank == 3 %}🥉{% else %}{{ rank }}{% endif %}
+            </div>
+            <div class="lb-info">
+                <div class="lb-name">{{ s.name }} {% if s.name == current_user.name %}<span
+                        class="badge badge-primary">You</span>{% endif %}</div>
+                <div class="lb-branch">{{ s.branch }} · {{ s.exams_taken }} exam{{ 's' if s.exams_taken != 1 }}</div>
+            </div>
+            <div class="lb-score">{{ s.avg_percent }}%</div>
         </div>
+        {% endfor %}
     </div>
     {% else %}
     <div class="empty-state">
         <div class="empty-icon">🏆</div>
-        <h3>No Leaderboard Data Yet</h3>
-        <p>Take an exam to get your name on the board!</p>
+        <p>No exam results yet. Take an exam to appear on the leaderboard!</p>
+        <a href="{{ url_for('student.home') }}" class="btn btn-primary">Go to Exams</a>
     </div>
     {% endif %}
 </div>

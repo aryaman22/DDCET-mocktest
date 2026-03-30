@@ -168,7 +168,7 @@ def exam_instructions(config_id):
     return render_template('student/instructions.html', config=config)
 
 
-@student_bp.route('/exam/<int:config_id>/start')
+@student_bp.route('/exam/<int:config_id>/start', methods=['GET', 'POST'])
 @login_required
 @student_required
 def start_exam(config_id):
@@ -268,7 +268,10 @@ def _render_exam(attempt, config):
     # BUG FIX: Use actual remaining seconds based on when exam started,
     # so a page refresh does NOT reset the timer to full duration.
     total_seconds = config.duration_minutes * 60
-    elapsed = int((datetime.now(timezone.utc) - attempt.started_at).total_seconds())
+    started = attempt.started_at
+    if started and started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    elapsed = int((datetime.now(timezone.utc) - started).total_seconds()) if started else 0
     remaining_seconds = max(0, total_seconds - elapsed)
 
     return render_template('student/exam.html',
@@ -372,7 +375,10 @@ def submit_exam(attempt_id):
 
     # Calculate time taken
     if attempt.started_at:
-        attempt.time_taken_sec = int((datetime.now(timezone.utc) - attempt.started_at).total_seconds())
+        sa = attempt.started_at
+        if sa.tzinfo is None:
+            sa = sa.replace(tzinfo=timezone.utc)
+        attempt.time_taken_sec = int((datetime.now(timezone.utc) - sa).total_seconds())
 
     db.session.commit()
 
@@ -453,7 +459,10 @@ def beacon_submit(attempt_id):
     attempt.unattempted     = result['unattempted']
     attempt.bonus_count     = result['bonus']
     if attempt.started_at:
-        attempt.time_taken_sec = int((datetime.now(timezone.utc) - attempt.started_at).total_seconds())
+        sa = attempt.started_at
+        if sa.tzinfo is None:
+            sa = sa.replace(tzinfo=timezone.utc)
+        attempt.time_taken_sec = int((datetime.now(timezone.utc) - sa).total_seconds())
 
     db.session.commit()
     return '', 200  # sendBeacon ignores response body
@@ -575,6 +584,46 @@ def result(attempt_id):
 # PRACTICE FLOW
 # ══════════════════════════════════════════════════════
 
+@student_bp.route('/practice/<int:config_id>/instructions')
+@login_required
+@student_required
+def practice_instructions(config_id):
+    config = ExamConfig.query.get_or_404(config_id)
+    if config.mode != 'practice' or not config.is_active:
+        abort(404)
+
+    # Get available topics from the config's banks
+    try:
+        bank_ids = json.loads(config.bank_ids) if config.bank_ids else []
+    except (json.JSONDecodeError, TypeError):
+        bank_ids = []
+
+    available_topics = []
+    if bank_ids:
+        topics_query = db.session.query(Question.topic).join(QuestionBank).filter(
+            QuestionBank.id.in_(bank_ids),
+            QuestionBank.is_active == True
+        ).distinct().order_by(Question.topic).all()
+        available_topics = [t[0] for t in topics_query if t[0]]
+
+    # Get total question count per section
+    base_q = Question.query.join(QuestionBank).filter(
+        QuestionBank.id.in_(bank_ids),
+        QuestionBank.is_active == True
+    )
+    total_available = base_q.count()
+    sec1_count = base_q.filter(Question.section == 1).count()
+    sec2_count = base_q.filter(Question.section == 2).count()
+
+    return render_template('student/practice_instructions.html',
+                           config=config,
+                           available_topics=available_topics,
+                           total_available=total_available,
+                           sec1_count=sec1_count,
+                           sec2_count=sec2_count,
+                           bank_names=get_bank_names(config))
+
+
 @student_bp.route('/practice/<int:config_id>/start', methods=['POST'])
 @login_required
 @student_required
@@ -587,10 +636,64 @@ def start_practice(config_id):
     if config.mode != 'practice' or not config.is_active:
         abort(404)
 
-    questions = select_questions_for_config(config)
-    if not questions:
-        flash('No questions available for this practice config.', 'error')
+    # Get student's custom preferences
+    num_questions_str = request.form.get('num_questions', '0')
+    section_filter = request.form.get('section', '0')
+    selected_topics = request.form.getlist('topics')
+
+    try:
+        num_questions = int(num_questions_str)
+    except (ValueError, TypeError):
+        num_questions = 0  # 0 = use config default
+
+    try:
+        section_filter = int(section_filter)
+        if section_filter not in [0, 1, 2]:
+            section_filter = 0
+    except (ValueError, TypeError):
+        section_filter = 0
+
+    # Build custom question pool based on student's choices
+    try:
+        bank_ids = json.loads(config.bank_ids) if config.bank_ids else []
+    except (json.JSONDecodeError, TypeError):
+        bank_ids = []
+
+    if not bank_ids:
+        flash('No question banks configured for this practice set.', 'error')
         return redirect(url_for('student.home'))
+
+    import random as _random
+    pool = Question.query.join(QuestionBank).filter(
+        QuestionBank.id.in_(bank_ids),
+        QuestionBank.is_active == True
+    )
+
+    # Apply section filter (student's choice overrides config)
+    if section_filter and section_filter != 0:
+        pool = pool.filter(Question.section == section_filter)
+    elif config.section_filter and config.section_filter != 0:
+        pool = pool.filter(Question.section == config.section_filter)
+
+    # Apply topic filter (student's choice overrides config)
+    if selected_topics:
+        pool = pool.filter(Question.topic.in_(selected_topics))
+    elif config.topic_filter and config.topic_filter.strip():
+        topics = [t.strip() for t in config.topic_filter.split(',') if t.strip()]
+        if topics:
+            pool = pool.filter(Question.topic.in_(topics))
+
+    pool = pool.all()
+
+    if not pool:
+        flash('No questions match your selected filters.', 'error')
+        return redirect(url_for('student.practice_instructions', config_id=config_id))
+
+    # Determine how many questions to serve
+    max_q = num_questions if num_questions > 0 else config.total_questions
+    n = min(max_q, len(pool))
+    questions = _random.sample(pool, n)
+    _random.shuffle(questions)
 
     practice_session = PracticeSession(
         user_id=current_user.id,

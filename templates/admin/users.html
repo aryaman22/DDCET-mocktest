@@ -1,83 +1,65 @@
 {% extends "base.html" %}
-{% block title %}Users — DDCET Admin{% endblock %}
-{% block head %}
-<style>
-  /* Prevent action column from clipping */
-  .users-table td:last-child { white-space: nowrap; min-width: 160px; }
-  .users-table td:nth-child(3) { max-width: 140px; word-break: break-word; white-space: normal; }
-  @media (max-width: 900px) {
-    .col-hide-md { display: none !important; }
-  }
-  @media (max-width: 640px) {
-    .col-hide-mobile { display: none !important; }
-    .table-dark td, .table-dark th { font-size: 0.78rem; padding: 9px 8px; }
-    .btn-group { flex-direction: column; gap: 4px; }
-  }
-</style>
-{% endblock %}
-{% block content %}
-<div class="main-content">
-    <h1 style="margin-bottom: 24px;">👥 User Management</h1>
+{% block title %}Users — DDCET{% endblock %}
+{% block page_title %}User Management{% endblock %}
 
-    <div class="table-responsive">
-        <table class="table-dark users-table">
+{% block content %}
+<div class="animate-fade">
+    <h3 style="margin-bottom:16px">👥 Registered Users</h3>
+    {% if users %}
+    <div class="table-container">
+        <table class="table-responsive">
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th class="col-hide-mobile">Enrollment No.</th>
-                    <th class="col-hide-md">Branch</th>
-                    <th class="col-hide-md">Email</th>
+                    <th>Enrollment</th>
+                    <th>Branch</th>
+                    <th>Email</th>
                     <th>Role</th>
-                    <th class="col-hide-mobile">Registered</th>
-                    <th class="col-hide-mobile">Last Attempt</th>
-                    <th>Status</th>
+                    <th>Active</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {% for user in users %}
+                {% for u in users %}
                 <tr>
-                    <td><strong>{{ user.name }}</strong></td>
-                    <td class="mono col-hide-mobile" style="font-size:.85rem;">{{ user.enrollment_number }}</td>
-                    <td class="col-hide-md" style="font-size:.85rem;">{{ user.engineering_branch }}</td>
-                    <td class="text-muted col-hide-md">{{ user.email }}</td>
-                    <td>
-                        <span class="badge {{ 'badge-exam' if user.role == 'admin' else 'badge-muted' }}">
-                            {{ user.role|upper }}
-                        </span>
+                    <td data-label="Name" class="font-medium">{{ u.name }}</td>
+                    <td data-label="Enrollment" class="font-mono">{{ u.enrollment_number }}</td>
+                    <td data-label="Branch"><span class="chip">{{ u.engineering_branch }}</span></td>
+                    <td data-label="Email" class="text-sm">{{ u.email }}</td>
+                    <td data-label="Role"><span
+                            class="badge {% if u.role == 'admin' %}badge-primary{% else %}badge-muted{% endif %}">{{
+                            u.role }}</span></td>
+                    <td data-label="Active">
+                        <form method="POST" action="{{ url_for('admin.toggle_user', user_id=u.id) }}"
+                            style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+                            <button type="submit"
+                                class="badge {% if u.is_active_user %}badge-success{% else %}badge-danger{% endif %}"
+                                style="cursor:pointer;border:none">
+                                {{ 'Active' if u.is_active_user else 'Suspended' }}
+                            </button>
+                        </form>
                     </td>
-                    <td class="mono col-hide-mobile" style="font-size:.8rem;">{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '' }}</td>
-                    <td class="mono col-hide-mobile" style="font-size:.8rem;">{{ user_last_attempts.get(user.id) | ist if user_last_attempts.get(user.id) else '—' }}</td>
-                    <td>
-                        <span class="badge {{ 'badge-success' if user.is_active else 'badge-danger' }}">
-                            {{ '✅ Active' if user.is_active else '❌ Inactive' }}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="btn-group">
-                            <form action="{{ url_for('admin.toggle_user', user_id=user.id) }}" method="POST"
-                                style="display:inline;">
-                                <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
-                                <button type="submit" class="btn btn-outline btn-sm">
-                                    {{ '🔴 Deactivate' if user.is_active else '🟢 Activate' }}
-                                </button>
-                            </form>
-                            {% if user.role == 'student' %}
-                            <form action="{{ url_for('admin.promote_user', user_id=user.id) }}" method="POST"
-                                style="display:inline;">
-                                <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
-                                <button type="submit" class="btn btn-warning btn-sm"
-                                    onclick="return confirm('Promote {{ user.name }} to admin?')">
-                                    ⬆ Promote
-                                </button>
-                            </form>
-                            {% endif %}
-                        </div>
+                    <td data-label="Actions">
+                        {% if u.role == 'student' %}
+                        <form method="POST" action="{{ url_for('admin.promote_user', user_id=u.id) }}"
+                            style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+                            <button type="submit" class="btn btn-ghost btn-sm"
+                                data-confirm="Promote {{ u.name }} to admin?">⬆ Admin</button>
+                        </form>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% else %}
+    <div class="empty-state card">
+        <div class="empty-icon">👥</div>
+        <p>No users registered yet.</p>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

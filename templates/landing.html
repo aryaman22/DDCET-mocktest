@@ -1,82 +1,152 @@
-{% extends "base.html" %}
-{% block title %}DDCET Portal - Welcome{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
 
-{% block content %}
-<div class="landing-hero"
-    style="text-align: center; padding: 80px 20px; background: linear-gradient(135deg, var(--bg-hover) 0%, var(--bg-panel) 100%); border-radius: 16px; margin-bottom: 40px; border: 1px solid var(--border);">
-    <h1 style="font-size: 3rem; margin-bottom: 20px; color: var(--primary);">Master the DDCET</h1>
-    <p style="font-size: 1.2rem; color: var(--muted); max-width: 600px; margin: 0 auto 30px;">
-        The ultimate practice and mock exam platform for Diploma to Degree Common Entrance Test aspirants. Real exam
-        simulation, instant analytics, and rank prediction.
-    </p>
-    <div style="display: flex; gap: 15px; justify-content: center;">
-        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg"
-            style="padding: 12px 30px; font-size: 1.1rem;">Get Started Free</a>
-        <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-lg"
-            style="padding: 12px 30px; font-size: 1.1rem;">Log In</a>
-    </div>
-</div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDCET Portal — Ace Your Entrance Exam</title>
+    <meta name="description"
+        content="Free mock tests and practice sets for DDCET diploma to degree entrance exam. Track your performance with smart analytics.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
 
-<div class="landing-features"
-    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 60px;">
-    <div class="card" style="padding: 30px; text-align: center;">
-        <div style="font-size: 2.5rem; margin-bottom: 15px;">⏱️</div>
-        <h3>Real Exam Environment</h3>
-        <p class="text-muted" style="font-size: 0.95rem; margin-top: 10px;">Fullscreen lock, strict timers, and a UI
-            that mimics the actual DDCET interface to build your test-taking stamina.</p>
-    </div>
-    <div class="card" style="padding: 30px; text-align: center;">
-        <div style="font-size: 2.5rem; margin-bottom: 15px;">📊</div>
-        <h3>Deep Analytics</h3>
-        <p class="text-muted" style="font-size: 0.95rem; margin-top: 10px;">Identify your weak topics instantly. See
-            exactly where you're losing marks and get detailed explanations for every question.</p>
-    </div>
-    <div class="card" style="padding: 30px; text-align: center;">
-        <div style="font-size: 2.5rem; margin-bottom: 15px;">🏆</div>
-        <h3>Rank Predictor</h3>
-        <p class="text-muted" style="font-size: 0.95rem; margin-top: 10px;">Compare your scores with hundreds of other
-            students through our active leaderboard and percentile-based rank estimation.</p>
-    </div>
-</div>
+<body>
 
-<div class="landing-how-it-works" style="margin-bottom: 60px;">
-    <h2 style="text-align: center; margin-bottom: 40px; font-size: 2rem;">How It Works</h2>
-    <div style="display: flex; flex-direction: column; gap: 20px; max-width: 800px; margin: 0 auto;">
-        <div class="card" style="padding: 20px; display: flex; align-items: center; gap: 20px;">
-            <div
-                style="width: 40px; height: 40px; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-size: 1.2rem; flex-shrink: 0;">
-                1</div>
-            <div>
-                <h4 style="margin: 0 0 5px 0;">Create an Account</h4>
-                <p class="text-muted" style="margin: 0; font-size: 0.9rem;">Sign up with your enrollment number and
-                    select your engineering branch.</p>
+    <nav class="landing-nav">
+        <a href="/" class="navbar-brand">
+            <div class="logo-icon">D</div>
+            <span>DDCET Portal</span>
+        </a>
+        <div class="nav-actions">
+            <a href="/contact" class="btn btn-ghost btn-sm hide-mobile">Contact</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-ghost btn-sm">Login</a>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Register Free</a>
+        </div>
+    </nav>
+
+    {# ═══ Gradient Hero ═══ #}
+    <section class="hero-gradient">
+        <h1>Ace Your <span>DDCET Exam</span></h1>
+        <p>Practice with realistic mock tests, get instant feedback, and track your weak areas. Built for diploma
+            engineering students who want to succeed.</p>
+        <div class="hero-buttons">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">🚀 Start Free</a>
+            <a href="#features" class="btn btn-outline btn-lg">Learn More</a>
+        </div>
+        <div class="hero-illustration">
+            <img src="{{ url_for('static', filename='img/hero.png') }}" alt="Student studying with DDCET Portal"
+                width="400" height="400" loading="eager">
+        </div>
+    </section>
+
+    {# ═══ Live Stats ═══ #}
+    <section class="stats-bar">
+        <div class="stat">
+            <div class="stat-number">{{ stats.students or 0 }}</div>
+            <div class="stat-label">Students Registered</div>
+        </div>
+        <div class="stat">
+            <div class="stat-number">{{ stats.questions or 0 }}</div>
+            <div class="stat-label">Questions Available</div>
+        </div>
+        <div class="stat">
+            <div class="stat-number">{{ stats.attempts or 0 }}</div>
+            <div class="stat-label">Exams Conducted</div>
+        </div>
+    </section>
+
+    {# ═══ Features ═══ #}
+    <section class="features-section" id="features">
+        <h2>Everything You Need to Prepare</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📝</div>
+                <h3>Timed Mock Exams</h3>
+                <p>Full-length DDCET mock tests with timer, fullscreen lock, and auto-submit — just like the real exam.
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>Smart Practice</h3>
+                <p>Choose your topic, section, and question count. Get instant answer feedback and explanations.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Performance Analytics</h3>
+                <p>Track accuracy by topic, identify weak areas, and see your progress over time with visual charts.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🏆</div>
+                <h3>Leaderboard</h3>
+                <p>Compete with peers on a real-time leaderboard. See your estimated rank and percentile.</p>
             </div>
         </div>
-        <div class="card" style="padding: 20px; display: flex; align-items: center; gap: 20px;">
-            <div
-                style="width: 40px; height: 40px; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-size: 1.2rem; flex-shrink: 0;">
-                2</div>
-            <div>
-                <h4 style="margin: 0 0 5px 0;">Practice Without Pressure</h4>
-                <p class="text-muted" style="margin: 0; font-size: 0.9rem;">Use Practice Mode for topic-wise drills with
-                    instant explanations for wrong answers.</p>
-            </div>
-        </div>
-        <div class="card" style="padding: 20px; display: flex; align-items: center; gap: 20px;">
-            <div
-                style="width: 40px; height: 40px; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-size: 1.2rem; flex-shrink: 0;">
-                3</div>
-            <div>
-                <h4 style="margin: 0 0 5px 0;">Take the Mock Exam</h4>
-                <p class="text-muted" style="margin: 0; font-size: 0.9rem;">Enter the high-stakes Exam Mode. No pausing,
-                    no cheating—just you and the timer.</p>
-            </div>
-        </div>
-    </div>
-</div>
+    </section>
 
-<footer
-    style="text-align: center; padding: 40px 0; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem;">
-    &copy; {{ range(2024, 2026) | last }} DDCET Mock Portal. All rights reserved.
-</footer>
-{% endblock %}
+    {# ═══ How It Works ═══ #}
+    <section class="how-it-works">
+        <h2>How It Works</h2>
+        <div class="steps-row">
+            <div class="step-item">
+                <div class="step-number">1</div>
+                <h3>Register Free</h3>
+                <p class="text-secondary text-sm">Create your account with enrollment number and branch.</p>
+            </div>
+            <div class="step-item">
+                <div class="step-number">2</div>
+                <h3>Take Mock Tests</h3>
+                <p class="text-secondary text-sm">Attempt timed exams or customize practice sets at your own pace.</p>
+            </div>
+            <div class="step-item">
+                <div class="step-number">3</div>
+                <h3>Improve & Repeat</h3>
+                <p class="text-secondary text-sm">Review answers, study weak topics, climb the leaderboard.</p>
+            </div>
+        </div>
+    </section>
+
+    {# ═══ CTA Section ═══ #}
+    <section class="cta-section">
+        <h2 style="margin-bottom:12px">Ready to Start Preparing?</h2>
+        <p class="text-secondary" style="margin-bottom:24px">Join hundreds of students already using DDCET Portal to
+            boost their exam scores.</p>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">🚀 Create Free Account</a>
+    </section>
+
+    {# ═══ FAQ ═══ #}
+    <section class="faq-section">
+        <h2>Frequently Asked Questions</h2>
+        <div class="faq-item">
+            <div class="faq-question">Is DDCET Portal free to use? <span>+</span></div>
+            <div class="faq-answer">Yes! Registration and all mock tests are completely free for students.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">What subjects are covered? <span>+</span></div>
+            <div class="faq-answer">Physics, Chemistry, Mathematics, and other subjects based on DDCET syllabus for all
+                engineering branches.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">Are the questions similar to the real DDCET exam? <span>+</span></div>
+            <div class="faq-answer">Our question bank is curated to match the DDCET exam pattern, difficulty level, and
+                marking scheme.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">Can I practice specific topics? <span>+</span></div>
+            <div class="faq-answer">Yes! Practice mode lets you choose the number of questions, filter by section, and
+                select specific topics to focus on your weak areas.</div>
+        </div>
+    </section>
+
+    <footer class="landing-footer">
+        <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:12px">
+            <a href="/contact" style="color:rgba(255,255,255,.7);font-size:.9rem">📬 Contact Us</a>
+            <a href="{{ url_for('auth.login') }}" style="color:rgba(255,255,255,.7);font-size:.9rem">🔑 Login</a>
+            <a href="{{ url_for('auth.register') }}" style="color:rgba(255,255,255,.7);font-size:.9rem">📝 Register</a>
+        </div>
+        <p>&copy; 2026 DDCET Portal. Built for students, by students.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>

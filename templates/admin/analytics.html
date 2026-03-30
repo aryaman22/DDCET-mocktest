@@ -1,283 +1,138 @@
 {% extends "base.html" %}
-{% block title %}Analytics — DDCET Admin{% endblock %}
-{% block head %}
-<style>
-    .analytics-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        margin-bottom: 20px;
-    }
+{% block title %}Analytics — DDCET{% endblock %}
+{% block page_title %}Analytics{% endblock %}
 
-    @media (max-width:720px) {
-        .analytics-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    .chart-box {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 20px;
-        box-shadow: var(--shadow-sm);
-    }
-
-    .chart-box h3 {
-        font-size: .95rem;
-        margin-bottom: 14px;
-    }
-
-    .bar-wrap {
-        display: flex;
-        align-items: flex-end;
-        gap: 6px;
-        overflow-x: auto;
-        min-height: 180px;
-        padding: 24px 4px 28px;
-    }
-
-    .b {
-        flex: 1;
-        min-width: 28px;
-        max-width: 70px;
-        border-radius: 4px 4px 0 0;
-        position: relative;
-        transition: opacity .15s;
-    }
-
-    .b:hover {
-        opacity: .8;
-    }
-
-    .b .bv {
-        position: absolute;
-        top: -20px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: .65rem;
-        font-weight: 700;
-        white-space: nowrap;
-        color: var(--text);
-    }
-
-    .b .bl {
-        position: absolute;
-        bottom: -22px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: .6rem;
-        color: var(--text-secondary);
-        white-space: nowrap;
-    }
-
-    @media (max-width:640px) {
-        .col-hide-mobile {
-            display: none !important;
-        }
-
-        .table-dark td,
-        .table-dark th {
-            font-size: 11px;
-            padding: 8px 6px;
-        }
-    }
-</style>
-{% endblock %}
 {% block content %}
-<div class="main-content">
-
-    <div
-        style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
-        <h1 style="margin-bottom:0;">📊 Analytics</h1>
-        <a href="{{ url_for('admin.export_analytics') }}" class="btn btn-primary"
-            style="display:flex;align-items:center;gap:8px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            Export Data
-        </a>
-    </div>
-
-    <!-- Stats -->
-    <div class="card-grid" style="margin-bottom:24px;">
-        <div class="stat-card">
-            <div class="stat-icon">📝</div>
-            <div class="stat-value mono">{{ total_exam_attempts }}</div>
-            <div class="stat-label">Total Exam Attempts</div>
+<div class="animate-fade">
+    {# Stats #}
+    <div class="grid grid-4 gap-16" style="margin-bottom:24px">
+        <div class="stat-card indigo">
+            <div class="stat-value">{{ total_exam_attempts }}</div>
+            <div class="stat-label">Exam Attempts</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-icon">📈</div>
-            <div class="stat-value mono">{{ avg_exam_score }}%</div>
-            <div class="stat-label">Avg Exam Score</div>
+        <div class="stat-card blue">
+            <div class="stat-value">{{ avg_exam_score }}%</div>
+            <div class="stat-label">Avg Score</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-icon">✅</div>
-            <div class="stat-value mono">{{ pass_rate }}%</div>
-            <div class="stat-label">Pass Rate (≥50%)</div>
+        <div class="stat-card {% if pass_rate >= 50 %}green{% else %}red{% endif %}">
+            <div class="stat-value">{{ pass_rate }}%</div>
+            <div class="stat-label">Pass Rate</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-icon">🎯</div>
-            <div class="stat-value mono">{{ total_practice }}</div>
+        <div class="stat-card yellow">
+            <div class="stat-value">{{ total_practice }}</div>
             <div class="stat-label">Practice Sessions</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-icon">📊</div>
-            <div class="stat-value mono">{{ avg_practice_accuracy }}%</div>
-            <div class="stat-label">Avg Practice Accuracy</div>
-        </div>
     </div>
 
-    <!-- Charts -->
-    <div class="analytics-grid">
-        <div class="chart-box">
-            <h3>📅 Exam Attempts — Last 14 Days</h3>
-            <div class="bar-wrap" id="daily-chart">
-                <p class="text-muted" style="font-size:.85rem;align-self:center;">Loading…</p>
+    <div class="grid grid-2 gap-16" style="margin-bottom:24px">
+        {# Daily Chart #}
+        <div class="card">
+            <div class="card-header"><span class="card-title">📈 Daily Attempts (14 days)</span></div>
+            <div id="daily-chart" style="height:200px;display:flex;align-items:flex-end;gap:4px;padding-top:12px"></div>
+        </div>
+        {# Mode Split #}
+        <div class="card">
+            <div class="card-header"><span class="card-title">📊 Exam vs Practice</span></div>
+            <div class="flex items-center gap-24 justify-center" style="padding:24px 0">
+                <div class="text-center">
+                    <div class="font-mono font-bold" style="font-size:2rem;color:var(--primary)">{{ exam_count }}</div>
+                    <div class="text-sm text-secondary">Exam Attempts</div>
+                </div>
+                <div class="text-center">
+                    <div class="font-mono font-bold" style="font-size:2rem;color:var(--green)">{{ practice_count }}
+                    </div>
+                    <div class="text-sm text-secondary">Practice Sessions</div>
+                </div>
             </div>
         </div>
-        <div class="chart-box" style="display:flex;flex-direction:column;align-items:center;">
-            <h3 style="align-self:flex-start;">📊 Exam vs Practice Ratio</h3>
-            <svg width="180" height="180" viewBox="0 0 200 200" id="ratio-svg"></svg>
-            <div style="display:flex;gap:20px;font-size:.82rem;margin-top:8px;">
-                <span style="color:var(--primary);">● Exams: <strong>{{ exam_count }}</strong></span>
-                <span style="color:var(--green);">● Practice: <strong>{{ practice_count }}</strong></span>
-            </div>
-        </div>
     </div>
 
-    <!-- Topic Chart -->
-    <div class="chart-box" style="margin-bottom:20px;">
-        <h3>📚 Topic-wise Accuracy</h3>
-        <div class="bar-wrap" id="topic-chart">
-            <p class="text-muted" style="font-size:.85rem;align-self:center;">Loading…</p>
-        </div>
+    {# Topic Accuracy #}
+    <div class="card" style="margin-bottom:24px">
+        <div class="card-header"><span class="card-title">📊 Topic-wise Accuracy</span></div>
+        <div class="topic-bar-chart" id="topic-chart"></div>
     </div>
 
-    <!-- Top Students -->
-    <div class="card" style="margin-bottom:20px;">
-        <h3 style="margin-bottom:16px;">🏆 Top 10 Students by Best Score</h3>
-        {% if top_students %}
-        <div class="table-responsive">
-            <table class="table-dark">
+    <div class="grid grid-2 gap-16">
+        {# Top Students #}
+        <div class="card">
+            <div class="card-header"><span class="card-title">🏆 Top Students</span></div>
+            {% if top_students %}
+            <table>
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Student</th>
-                        <th class="col-hide-mobile">Email</th>
-                        <th class="col-hide-mobile">Branch</th>
-                        <th>Best %</th>
+                        <th>Name</th>
+                        <th>Avg %</th>
                         <th>Attempts</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for s in top_students %}
                     <tr>
-                        <td class="mono">{{ loop.index }}</td>
-                        <td><strong>{{ s.name }}</strong></td>
-                        <td class="text-muted col-hide-mobile" style="font-size:.82rem;">{{ s.email }}</td>
-                        <td class="col-hide-mobile"><span class="badge badge-muted">{{ s.engineering_branch }}</span>
-                        </td>
-                        <td class="mono text-green"><strong>{{ s.best_score }}%</strong></td>
-                        <td class="mono">{{ s.attempt_count }}</td>
+                        <td class="font-mono">{{ loop.index }}</td>
+                        <td>{{ s.name }}</td>
+                        <td class="font-mono">{{ s.avg_pct|round(1) }}%</td>
+                        <td class="font-mono">{{ s.attempt_count }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+            {% else %}<p class="text-muted text-sm">No data yet.</p>{% endif %}
         </div>
-        {% else %}<p class="text-muted">No exam data yet.</p>{% endif %}
-    </div>
-
-    <!-- Hardest Questions -->
-    <div class="card">
-        <h3 style="margin-bottom:16px;">🔥 10 Hardest Questions</h3>
-        {% if hardest %}
-        <div class="table-responsive">
-            <table class="table-dark">
+        {# Hardest Questions #}
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">🔥 Hardest Questions</span>
+                <a href="{{ url_for('admin.export_analytics') }}" class="btn btn-outline btn-sm">📤 Export</a>
+            </div>
+            {% if hardest %}
+            <table>
                 <thead>
                     <tr>
-                        <th>#</th>
+                        <th>Topic</th>
                         <th>Question</th>
-                        <th class="col-hide-mobile">Topic</th>
-                        <th>Correct %</th>
-                        <th class="col-hide-mobile">Attempts</th>
+                        <th>Acc</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for h in hardest %}
+                    {% for q in hardest %}
                     <tr>
-                        <td class="mono">{{ loop.index }}</td>
-                        <td style="font-size:.85rem;">{{ h.question }}</td>
-                        <td class="col-hide-mobile"><span class="badge badge-muted">{{ h.topic }}</span></td>
-                        <td class="mono text-red"><strong>{{ h.accuracy }}%</strong></td>
-                        <td class="mono col-hide-mobile">{{ h.attempts }}</td>
+                        <td><span class="chip">{{ q.topic }}</span></td>
+                        <td class="text-sm"
+                            style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{
+                            q.question }}</td>
+                        <td class="font-mono"><span
+                                class="badge {% if q.accuracy < 30 %}badge-danger{% elif q.accuracy < 60 %}badge-warning{% else %}badge-success{% endif %}">{{
+                                q.accuracy }}%</span></td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+            {% else %}<p class="text-muted text-sm">No data yet.</p>{% endif %}
         </div>
-        {% else %}<p class="text-muted">No attempt data yet.</p>{% endif %}
     </div>
-
 </div>
+{% endblock %}
+
+{% block scripts %}
 <script>
-    const dailyData = {{ daily_data | safe }};
-    const topicData = {{ topic_chart_data | safe }};
-    const examCount = {{ exam_count }};
-    const practiceCount = {{ practice_count }};
-
-    document.addEventListener('DOMContentLoaded', () => {
-        renderDaily();
-        renderTopic();
-        renderDonut();
-    });
-
-    function renderDaily() {
-        const el = document.getElementById('daily-chart');
-        if (!el) return;
-        if (!dailyData || !dailyData.length) { el.innerHTML = '<p class="text-muted" style="font-size:.85rem;align-self:center;">No data yet</p>'; return; }
+    const dailyData = {{ daily_data| tojson }};
+    const chartEl = document.getElementById('daily-chart');
+    if (chartEl && dailyData.length) {
         const max = Math.max(...dailyData.map(d => d.count), 1);
-        el.innerHTML = dailyData.map(d => {
-            const h = Math.max((d.count / max) * 160, d.count > 0 ? 6 : 2);
-            return `<div class="b" style="height:${h}px;background:var(--primary);"><span class="bv">${d.count}</span><span class="bl">${d.date}</span></div>`;
-        }).join('');
+        chartEl.innerHTML = dailyData.map(d => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+        <span class="text-xs font-mono">${d.count}</span>
+        <div style="width:100%;background:var(--primary);border-radius:4px 4px 0 0;height:${Math.max(d.count / max * 160, 4)}px;transition:height .5s ease"></div>
+        <span class="text-xs text-muted">${d.date.slice(-2)}</span></div>`).join('');
     }
-
-    function renderTopic() {
-        const el = document.getElementById('topic-chart');
-        if (!el) return;
-        if (!topicData || !topicData.length) { el.innerHTML = '<p class="text-muted" style="font-size:.85rem;align-self:center;">No topic data yet</p>'; return; }
-        el.innerHTML = topicData.map(d => {
-            const h = Math.max((d.accuracy / 100) * 160, d.accuracy > 0 ? 6 : 2);
-            const c = d.accuracy >= 70 ? 'var(--green)' : d.accuracy >= 40 ? 'var(--yellow)' : 'var(--red)';
-            return `<div class="b" style="height:${h}px;background:${c};"><span class="bv">${d.accuracy}%</span><span class="bl">${d.topic.substring(0, 9)}</span></div>`;
-        }).join('');
-    }
-
-    function renderDonut() {
-        const svg = document.getElementById('ratio-svg');
-        if (!svg) return;
-        const total = examCount + practiceCount;
-        if (!total) { svg.innerHTML = '<text x="100" y="108" text-anchor="middle" fill="var(--muted)" font-size="13">No data yet</text>'; return; }
-        const cx = 100, cy = 100, r = 72, sw = 28;
-        const pct = examCount / total;
-        const ang = pct * 2 * Math.PI;
-        const x2 = cx + r * Math.sin(ang), y2 = cy - r * Math.cos(ang);
-        const large = pct > 0.5 ? 1 : 0;
-        let arc = '';
-        if (examCount > 0 && practiceCount > 0) {
-            arc = `<path d="M ${cx} ${cy - r} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}" fill="none" stroke="var(--primary)" stroke-width="${sw}"/>`;
-        } else if (examCount === total) {
-            arc = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--primary)" stroke-width="${sw}"/>`;
-        }
-        svg.innerHTML = `
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--green)" stroke-width="${sw}"/>
-    ${arc}
-    <circle cx="${cx}" cy="${cy}" r="${r - sw / 2 - 2}" fill="var(--surface)"/>
-    <text x="${cx}" y="${cy - 5}" text-anchor="middle" fill="var(--text)" font-size="22" font-weight="700" font-family="monospace">${total}</text>
-    <text x="${cx}" y="${cy + 14}" text-anchor="middle" fill="var(--muted)" font-size="11">Total</text>`;
+    const topicData = {{ topic_chart_data| tojson }};
+    const topicEl = document.getElementById('topic-chart');
+    if (topicEl && topicData.length) {
+        topicEl.innerHTML = topicData.map(t => `<div class="topic-bar">
+        <span class="topic-name">${t.topic}</span>
+        <div class="bar-container"><div class="bar-fill" style="width:${t.accuracy}%;background:${t.accuracy >= 70 ? 'var(--green)' : t.accuracy >= 40 ? 'var(--yellow)' : 'var(--red)'}"></div></div>
+        <span class="bar-pct">${t.accuracy}%</span></div>`).join('');
     }
 </script>
 {% endblock %}

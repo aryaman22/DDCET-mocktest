@@ -131,7 +131,7 @@ def create_bank():
         flash(f'Question bank "{name}" created successfully.', 'success')
         return redirect(url_for('admin.banks'))
 
-    return render_template('admin/bank_detail.html', bank=None, mode='create')
+    return render_template('admin/create_bank.html', bank=None, mode='create')
 
 
 @admin_bp.route('/banks/<int:bank_id>/questions')
@@ -807,12 +807,12 @@ def analytics():
     # ── Top 10 students ─────────────────────────────────
     top_students = db.session.query(
         User.name, User.email, User.engineering_branch,
-        db.func.max(TestAttempt.percentage).label('best_score'),
+        db.func.avg(TestAttempt.percentage).label('avg_pct'),
         db.func.count(TestAttempt.id).label('attempt_count')
     ).join(TestAttempt, User.id == TestAttempt.user_id).filter(
         TestAttempt.mode == 'exam',
         TestAttempt.status.in_(['submitted', 'timeout'])
-    ).group_by(User.id).order_by(db.desc('best_score')).limit(10).all()
+    ).group_by(User.id).order_by(db.desc('avg_pct')).limit(10).all()
 
     return render_template('admin/analytics.html',
                            total_exam_attempts=total_exam_attempts,

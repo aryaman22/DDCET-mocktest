@@ -1,53 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
+{% block title %}Practice — DDCET{% endblock %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ config.name }} — Practice — DDCET</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-</head>
-
-<body>
-    <!-- Practice Header -->
-    <div class="practice-header">
-        <div class="practice-title">
-            🎯 Practice Mode · {{ config.name }}
-            {% if topic_drill %}
-            <span class="badge badge-practice">🏷 Topic Drill: {{ topic_drill }}</span>
-            {% endif %}
+{% block content %}
+<div class="practice-header">
+    <div class="header-row">
+        <div class="flex items-center gap-8">
+            <span class="font-bold text-sm">🎯 Practice</span>
+            {% if topic_drill %}<span class="badge badge-muted">{{ topic_drill }}</span>{% endif %}
         </div>
-        <div class="practice-stats">
-            <span id="q-counter" class="mono">Q 1 / {{ question_count }}</span>
-            <span id="accuracy-display" class="accuracy">Accuracy: 0% (0/0)</span>
+        <div class="flex items-center gap-16">
+            <span class="text-sm font-mono" id="q-counter">Q 1 / {{ question_count }}</span>
+            <span class="text-sm" id="accuracy-display" style="color:var(--green)">Accuracy: 0%</span>
         </div>
     </div>
-
-    <!-- Progress Bar -->
-    <div class="progress-bar-practice">
-        <div class="progress-bar-fill" id="progress-fill" style="width: 0%;"></div>
+    <div class="practice-progress">
+        <div class="fill" id="progress-fill" style="width:0%"></div>
     </div>
+</div>
 
-    <!-- Main Content -->
-    <div style="max-width: 800px; margin: 0 auto; padding: 20px 16px 40px;">
-        <div id="practice-container">
-            <!-- Rendered by practice.js -->
-        </div>
+<div class="practice-main animate-fade" id="practice-container">
+    {# Rendered by practice.js #}
+</div>
 
-        <div
-            style="text-align: center; margin-top: 24px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-            <button class="btn btn-danger" onclick="finishPractice()">🏁 Finish Practice</button>
-            <a href="{{ url_for('student.home') }}" class="btn btn-outline">🏠 Home</a>
-            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline"
-                style="color:var(--red);border-color:var(--red);">Logout</a>
-        </div>
-    </div>
+<script>
+    window.SESSION_ID = {{ practice.id }};
+    window.PRACTICE_QUESTIONS = {{ questions_json | safe }};
+    window.CSRF_TOKEN = "{{ g.csrf_token }}";
+</script>
+{% endblock %}
 
-    <script>
-        window.SESSION_ID = {{ practice.id }};
-        window.PRACTICE_QUESTIONS = {{ questions_json | safe }};
-    </script>
-    <script src="{{ url_for('static', filename='js/practice.js') }}"></script>
-</body>
-
-</html>
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/practice.js') }}"></script>
+{% endblock %}

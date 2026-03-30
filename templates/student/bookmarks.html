@@ -1,108 +1,47 @@
 {% extends "base.html" %}
-{% block title %}Bookmarked Questions — DDCET{% endblock %}
+{% block title %}Bookmarks — DDCET{% endblock %}
 
 {% block content %}
-<div class="main-content" style="max-width: 900px; margin: 0 auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-        <h1 style="margin: 0;">🔖 Bookmarked Questions</h1>
-        <span class="badge badge-primary">{{ bookmarks|length }} Saved</span>
+<div class="page-content animate-fade">
+    <div class="bookmarks-header">
+        <h2>🔖 Bookmarked Questions <span class="badge badge-primary">{{ bookmarks|length }}</span></h2>
     </div>
 
     {% if bookmarks %}
-    <div style="display: flex; flex-direction: column; gap: 20px;">
-        {% for bm in bookmarks %}
-        {% set q = bm.question %}
-        <div class="review-item" id="bookmark-{{ q.id }}">
-            <div class="review-header">
-                <div>
-                    <span class="question-number">Q{{ q.qno }}</span>
-                    <span class="badge badge-muted">{{ q.topic }}</span>
-                    <span class="text-muted" style="font-size: 0.8rem; margin-left: 10px;">Saved on {{
-                        bm.created_at.strftime('%b %d, %Y') }}</span>
-                </div>
-                <div>
-                    <button class="btn btn-outline btn-sm remove-bookmark-btn" data-qid="{{ q.id }}"
-                        style="color: var(--red); border-color: var(--red);">Remove</button>
-                </div>
-            </div>
-            <p style="margin: 8px 0; font-size: 1.05rem;">{{ q.question }}</p>
-            <div class="review-options"
-                style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                {% for opt in ['A', 'B', 'C', 'D'] %}
-                <div class="review-option {{ 'correct-opt' if opt == q.correct_ans else '' }}"
-                    style="padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-panel);">
-                    <strong>{{ opt }}:</strong> {{ q['option_' + opt|lower] }}
-                    {% if opt == q.correct_ans %} <span style="float: right;">✅</span>{% endif %}
-                </div>
-                {% endfor %}
-            </div>
-            {% if q.explanation %}
-            <div class="review-explanation"
-                style="margin-top: 15px; padding: 12px; background: rgba(34, 197, 94, 0.1); border-left: 4px solid var(--green); border-radius: 4px;">
-                <strong>💡 Explanation:</strong> {{ q.explanation }}
-            </div>
-            {% endif %}
+    {% for bm in bookmarks %}
+    <div class="bookmark-card">
+        <form method="POST" action="{{ url_for('student.toggle_bookmark', q_id=bm.question.id) }}"
+            style="position:absolute;top:12px;right:12px">
+            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+            <button type="submit" class="bookmark-remove" title="Remove bookmark">🗑</button>
+        </form>
+        <div class="flex gap-8" style="margin-bottom:8px">
+            <span class="chip">{{ bm.question.section }}</span>
+            <span class="chip">{{ bm.question.topic }}</span>
         </div>
-        {% endfor %}
+        <div class="question-text" style="font-size:.95rem;margin-bottom:12px">{{ bm.question.question }}</div>
+        <div class="options-list" style="gap:6px">
+            {% for opt in ['A','B','C','D'] %}
+            <div class="option-btn locked {% if opt == bm.question.correct_ans %}correct{% endif %}"
+                style="padding:10px 14px;cursor:default;min-height:auto">
+                <span class="option-label" style="width:28px;height:28px;font-size:.8rem">{{ opt }}</span>
+                <span class="option-text text-sm">{{ bm.question['option_' ~ opt|lower] }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% if bm.question.explanation %}
+        <div class="feedback-box feedback-correct" style="margin-top:12px">
+            <div>💡 {{ bm.question.explanation }}</div>
+        </div>
+        {% endif %}
     </div>
+    {% endfor %}
     {% else %}
     <div class="empty-state">
         <div class="empty-icon">🔖</div>
-        <h3>No Bookmarks Yet</h3>
-        <p>Save difficult questions during practice sessions to review them later.</p>
-        <a href="{{ url_for('student.home') }}" class="btn btn-primary" style="margin-top: 20px;">Go to Practice</a>
+        <p>No bookmarked questions yet. Bookmark questions during exams to review them later!</p>
+        <a href="{{ url_for('student.home') }}" class="btn btn-primary">Go to Exams</a>
     </div>
     {% endif %}
 </div>
-
-<!-- CSRF Token -->
-<meta name="csrf-token" content="{{ g.csrf_token }}">
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-        document.querySelectorAll('.remove-bookmark-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const qid = e.target.dataset.qid;
-                const container = document.getElementById(`bookmark-${qid}`);
-
-                try {
-                    btn.disabled = true;
-                    btn.innerText = 'Removing...';
-
-                    const response = await fetch(`/student/bookmark/${qid}`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': csrfToken,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    const data = await response.json();
-
-                    if (data.ok && data.bookmarked === false) {
-                        container.style.opacity = '0';
-                        setTimeout(() => {
-                            container.remove();
-                            // If no bookmarks left, reload to show empty state
-                            if (document.querySelectorAll('.review-item').length === 0) {
-                                window.location.reload();
-                            }
-                        }, 300);
-                    } else {
-                        alert('Error removing bookmark');
-                        btn.disabled = false;
-                        btn.innerText = 'Remove';
-                    }
-                } catch (err) {
-                    console.error(err);
-                    alert('Connection error');
-                    btn.disabled = false;
-                    btn.innerText = 'Remove';
-                }
-            });
-        });
-    });
-</script>
 {% endblock %}

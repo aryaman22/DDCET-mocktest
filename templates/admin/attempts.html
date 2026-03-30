@@ -1,105 +1,62 @@
 {% extends "base.html" %}
-{% block title %}Attempts — DDCET Admin{% endblock %}
-{% block head %}
-<style>
-  @media (max-width: 640px) {
-    .col-hide-mobile { display: none !important; }
-    .table-dark td, .table-dark th { font-size: 11px; padding: 8px 6px; }
-  }
-</style>
-{% endblock %}
+{% block title %}Attempts — DDCET{% endblock %}
+{% block page_title %}Exam Attempts{% endblock %}
+
 {% block content %}
-<div class="main-content">
-
-    <div class="d-flex justify-between align-center" style="margin-bottom:24px; flex-wrap:wrap; gap:12px;">
-        <div>
-            <h1 style="margin-bottom:4px;">📋 Exam Attempts</h1>
-            <p class="text-muted" style="font-size:.85rem; margin:0;">
-                Total in database: <strong>{{ total_count if total_count is defined else '?' }}</strong>
-                &nbsp;|&nbsp; Showing: <strong>{{ attempts|length }}</strong>
-            </p>
-        </div>
-        <a href="{{ url_for('admin.export_attempts') }}" class="btn btn-outline">📥 Export CSV</a>
-    </div>
-
-    <!-- Filters -->
-    <div class="card" style="margin-bottom:20px; padding:16px;">
-        <form method="GET" action="{{ url_for('admin.attempts') }}">
-            <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
-                <select name="config_id" class="form-control" style="flex:1; min-width:160px;">
-                    <option value="">All Configs</option>
-                    {% for c in configs %}
-                    <option value="{{ c.id }}" {{ 'selected' if config_filter == c.id|string else '' }}>
-                        {{ c.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-                <select name="mode" class="form-control" style="flex:1; min-width:130px;">
-                    <option value="">All Modes</option>
-                    <option value="exam" {{ 'selected' if mode_filter == 'exam' else '' }}>📝 Exam</option>
-                    <option value="practice" {{ 'selected' if mode_filter == 'practice' else '' }}>🎯 Practice</option>
-                </select>
-                <input type="text" name="student" class="form-control"
-                    placeholder="Student name..."
-                    value="{{ student_filter }}"
-                    style="flex:2; min-width:160px;">
-                <button type="submit" class="btn btn-primary btn-sm">🔍 Search</button>
-                {% if config_filter or mode_filter or student_filter %}
-                <a href="{{ url_for('admin.attempts') }}" class="btn btn-outline btn-sm">✕ Clear</a>
-                {% endif %}
-            </div>
-        </form>
-    </div>
+<div class="animate-fade">
+    {# Filters #}
+    <form class="card flex gap-12 items-center flex-wrap" style="margin-bottom:16px;padding:12px 16px" method="GET">
+        <select name="config_id" class="form-select" style="width:auto;min-height:36px;padding:6px 32px 6px 10px">
+            <option value="">All Configs</option>
+            {% for c in configs %}<option value="{{ c.id }}" {% if config_filter==c.id|string %}selected{% endif %}>{{
+                c.name }}</option>{% endfor %}
+        </select>
+        <select name="mode" class="form-select" style="width:auto;min-height:36px;padding:6px 32px 6px 10px">
+            <option value="">All Modes</option>
+            <option value="exam" {% if mode_filter=='exam' %}selected{% endif %}>Exam</option>
+            <option value="practice" {% if mode_filter=='practice' %}selected{% endif %}>Practice</option>
+        </select>
+        <input type="text" name="student" value="{{ student_filter }}" placeholder="Student name..." class="form-input"
+            style="width:180px;min-height:36px;padding:6px 10px">
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        <span class="text-sm text-muted">{{ total_count }} results</span>
+        <a href="{{ url_for('admin.export_attempts') }}" class="btn btn-outline btn-sm" style="margin-left:auto">📤
+            Export CSV</a>
+    </form>
 
     {% if attempts %}
-    <div class="table-responsive">
-        <table class="table-dark">
+    <div class="table-container">
+        <table class="table-responsive">
             <thead>
                 <tr>
                     <th>Student</th>
-                    <th class="col-hide-mobile">Config</th>
-                    <th class="col-hide-mobile">Mode</th>
-                    <th class="col-hide-mobile">Date</th>
+                    <th>Config</th>
+                    <th>Mode</th>
+                    <th>Date</th>
                     <th>Score</th>
                     <th>%</th>
-                    <th class="col-hide-mobile">Time</th>
                     <th>Status</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 {% for a in attempts %}
-                <tr class="clickable-row"
-                    onclick="window.location.href='{{ url_for('admin.attempt_detail', attempt_id=a.id) }}';">
-                    <td>{{ a.user.name if a.user else 'N/A' }}</td>
-                    <td class="col-hide-mobile">{{ a.config.name if a.config else 'N/A' }}</td>
-                    <td class="col-hide-mobile">
-                        <span class="badge {{ 'badge-exam' if a.mode == 'exam' else 'badge-practice' }}">
-                            {{ '📝' if a.mode == 'exam' else '🎯' }} {{ a.mode|upper }}
-                        </span>
-                    </td>
-                    <td class="mono col-hide-mobile" style="font-size:.8rem;">
-                        {{ a.started_at.strftime('%Y-%m-%d %H:%M') if a.started_at else '' }}
-                    </td>
-                    <td class="mono">{{ a.score }}/{{ a.max_score }}</td>
-                    <td class="mono {{ 'text-green' if a.percentage >= 50 else 'text-red' }}">
-                        {{ a.percentage }}%
-                    </td>
-                    <td class="mono col-hide-mobile" style="font-size:.8rem;">
-                        {% if a.time_taken_sec %}
-                            {{ a.time_taken_sec // 60 }}m {{ a.time_taken_sec % 60 }}s
-                        {% else %}—{% endif %}
-                    </td>
-                    <td>
-                        <span class="badge
-                            {{ 'badge-success' if a.status == 'submitted'
-                               else 'badge-warning' if a.status == 'in_progress'
-                               else 'badge-muted' }}">
-                            {{ a.status }}
-                        </span>
-                        {% if a.fs_exit_count > 0 or a.tab_switch_count > 0 %}
-                        <span class="violation-badge">🚨 {{ a.fs_exit_count + a.tab_switch_count }}</span>
-                        {% endif %}
-                    </td>
+                <tr>
+                    <td data-label="Student">{{ a.user.name if a.user else '?' }}</td>
+                    <td data-label="Config">{{ a.config.name if a.config else '?' }}</td>
+                    <td data-label="Mode"><span
+                            class="badge {% if a.mode == 'exam' %}badge-primary{% else %}badge-success{% endif %}">{{
+                            a.mode }}</span></td>
+                    <td data-label="Date" class="text-sm">{{ a.started_at|ist }}</td>
+                    <td data-label="Score" class="font-mono">{{ a.score }}/{{ a.max_score }}</td>
+                    <td data-label="%"><span
+                            class="badge {% if a.percentage >= 50 %}badge-success{% else %}badge-danger{% endif %}">{{
+                            a.percentage|round(1) }}%</span></td>
+                    <td data-label="Status"><span
+                            class="badge {% if a.status == 'submitted' %}badge-success{% elif a.status == 'in_progress' %}badge-warning{% else %}badge-muted{% endif %}">{{
+                            a.status }}</span></td>
+                    <td><a href="{{ url_for('admin.attempt_detail', attempt_id=a.id) }}"
+                            class="btn btn-ghost btn-sm">View →</a></td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -108,38 +65,25 @@
 
     {% if pagination.pages > 1 %}
     <div class="pagination">
-        {% if pagination.has_prev %}
-        <a href="{{ url_for('admin.attempts', page=pagination.prev_num, config_id=config_filter, mode=mode_filter, student=student_filter) }}">← Prev</a>
-        {% endif %}
-        {% for p in pagination.iter_pages() %}
-            {% if p %}
-                {% if p == pagination.page %}
-                <span class="current">{{ p }}</span>
-                {% else %}
-                <a href="{{ url_for('admin.attempts', page=p, config_id=config_filter, mode=mode_filter, student=student_filter) }}">{{ p }}</a>
-                {% endif %}
-            {% else %}
-            <span class="disabled">…</span>
-            {% endif %}
+        {% if pagination.has_prev %}<a
+            href="?page={{ pagination.prev_num }}&config_id={{ config_filter }}&mode={{ mode_filter }}&student={{ student_filter }}">←</a>{%
+        endif %}
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if p %}<a
+            href="?page={{ p }}&config_id={{ config_filter }}&mode={{ mode_filter }}&student={{ student_filter }}"
+            class="{% if p == pagination.page %}active{% endif %}">{{ p }}</a>
+        {% else %}<span class="disabled">…</span>{% endif %}
         {% endfor %}
-        {% if pagination.has_next %}
-        <a href="{{ url_for('admin.attempts', page=pagination.next_num, config_id=config_filter, mode=mode_filter, student=student_filter) }}">Next →</a>
-        {% endif %}
+        {% if pagination.has_next %}<a
+            href="?page={{ pagination.next_num }}&config_id={{ config_filter }}&mode={{ mode_filter }}&student={{ student_filter }}">→</a>{%
+        endif %}
     </div>
     {% endif %}
-
     {% else %}
-    <div class="empty-state">
+    <div class="empty-state card">
         <div class="empty-icon">📋</div>
-        {% if config_filter or mode_filter or student_filter %}
-        <h3>No attempts match your filters</h3>
-        <p>Try <a href="{{ url_for('admin.attempts') }}">clearing all filters</a> to see all attempts.</p>
-        {% else %}
-        <h3>No attempts yet</h3>
-        <p>Exam attempts will appear here once students take tests.</p>
-        {% endif %}
+        <p>No attempts found matching your filters.</p>
     </div>
     {% endif %}
-
 </div>
 {% endblock %}

@@ -1,84 +1,50 @@
 {% extends "base.html" %}
-{% block title %}Edit Question — DDCET Admin{% endblock %}
+{% block title %}Edit Question — DDCET{% endblock %}
+{% block page_title %}Edit Question{% endblock %}
+
 {% block content %}
-<div class="main-content">
-    <h1 style="margin-bottom: 24px;">✏️ Edit Question #{{ question.qno }}</h1>
+<div class="animate-fade" style="max-width:700px">
+    <a href="{{ url_for('admin.bank_questions', bank_id=question.bank_id) }}" class="btn btn-ghost btn-sm"
+        style="margin-bottom:16px">← Back</a>
 
-    <div class="card" style="max-width: 700px;">
-        <form method="POST" action="{{ url_for('admin.edit_question', q_id=question.id) }}">
+    <div class="card">
+        <h3 style="margin-bottom:16px">Edit Question #{{ question.qno }}</h3>
+        <form method="POST">
             <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="qno">Question Number</label>
-                    <input type="number" name="qno" id="qno" class="form-control" value="{{ question.qno }}">
-                </div>
-                <div class="form-group">
-                    <label for="section">Section</label>
-                    <select name="section" id="section" class="form-control">
-                        <option value="1" {{ 'selected' if question.section==1 }}>Section 1</option>
-                        <option value="2" {{ 'selected' if question.section==2 }}>Section 2</option>
+            <div class="grid grid-3 gap-12">
+                <div class="form-group"><label class="form-label">Q No.</label><input type="number" name="qno"
+                        class="form-input" value="{{ question.qno }}" required></div>
+                <div class="form-group"><label class="form-label">Section</label>
+                    <select name="section" class="form-select">
+                        <option value="1" {% if question.section==1 %}selected{% endif %}>Section 1</option>
+                        <option value="2" {% if question.section==2 %}selected{% endif %}>Section 2</option>
                     </select>
                 </div>
+                <div class="form-group"><label class="form-label">Topic</label><input type="text" name="topic"
+                        class="form-input" value="{{ question.topic }}" required></div>
             </div>
-
-            <div class="form-group">
-                <label for="topic">Topic</label>
-                <input type="text" name="topic" id="topic" class="form-control" value="{{ question.topic }}">
+            <div class="form-group"><label class="form-label">Question</label><textarea name="question"
+                    class="form-textarea" rows="3" required>{{ question.question }}</textarea></div>
+            <div class="grid grid-2 gap-12">
+                <div class="form-group"><label class="form-label">Option A</label><input type="text" name="option_a"
+                        class="form-input" value="{{ question.option_a }}" required></div>
+                <div class="form-group"><label class="form-label">Option B</label><input type="text" name="option_b"
+                        class="form-input" value="{{ question.option_b }}" required></div>
+                <div class="form-group"><label class="form-label">Option C</label><input type="text" name="option_c"
+                        class="form-input" value="{{ question.option_c }}" required></div>
+                <div class="form-group"><label class="form-label">Option D</label><input type="text" name="option_d"
+                        class="form-input" value="{{ question.option_d }}" required></div>
             </div>
-
-            <div class="form-group">
-                <label for="question">Question Text *</label>
-                <textarea name="question" id="question" class="form-control" rows="3"
-                    required>{{ question.question }}</textarea>
+            <div class="form-group"><label class="form-label">Correct Answer</label>
+                <select name="correct_ans" class="form-select">{% for o in ['A','B','C','D','X'] %}<option
+                        value="{{ o }}" {% if question.correct_ans==o %}selected{% endif %}>{{ o }}</option>{% endfor
+                    %}</select>
             </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="option_a">Option A *</label>
-                    <input type="text" name="option_a" id="option_a" class="form-control"
-                        value="{{ question.option_a }}" required>
-                </div>
-                <div class="form-group">
-                    <label for="option_b">Option B *</label>
-                    <input type="text" name="option_b" id="option_b" class="form-control"
-                        value="{{ question.option_b }}" required>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="option_c">Option C *</label>
-                    <input type="text" name="option_c" id="option_c" class="form-control"
-                        value="{{ question.option_c }}" required>
-                </div>
-                <div class="form-group">
-                    <label for="option_d">Option D *</label>
-                    <input type="text" name="option_d" id="option_d" class="form-control"
-                        value="{{ question.option_d }}" required>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="correct_ans">Correct Answer *</label>
-                <select name="correct_ans" id="correct_ans" class="form-control" style="width: 200px;">
-                    <option value="A" {{ 'selected' if question.correct_ans=='A' }}>A</option>
-                    <option value="B" {{ 'selected' if question.correct_ans=='B' }}>B</option>
-                    <option value="C" {{ 'selected' if question.correct_ans=='C' }}>C</option>
-                    <option value="D" {{ 'selected' if question.correct_ans=='D' }}>D</option>
-                    <option value="X" {{ 'selected' if question.correct_ans=='X' }}>X (Bonus)</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="explanation">Explanation</label>
-                <textarea name="explanation" id="explanation" class="form-control"
-                    rows="2">{{ question.explanation or '' }}</textarea>
-            </div>
-
-            <div class="btn-group">
-                <button type="submit" class="btn btn-primary">💾 Save Changes</button>
-                <a href="{{ url_for('admin.bank_questions', bank_id=bank.id) }}" class="btn btn-outline">Cancel</a>
-            </div>
+            <div class="form-group"><label class="form-label">Explanation</label><textarea name="explanation"
+                    class="form-textarea" rows="2">{{ question.explanation or '' }}</textarea></div>
+            <div class="flex gap-12"><button type="submit" class="btn btn-primary">Save Changes</button><a
+                    href="{{ url_for('admin.bank_questions', bank_id=question.bank_id) }}"
+                    class="btn btn-outline">Cancel</a></div>
         </form>
     </div>
 </div>

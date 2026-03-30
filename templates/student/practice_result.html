@@ -1,93 +1,79 @@
 {% extends "base.html" %}
 {% block title %}Practice Result — DDCET{% endblock %}
-{% block head %}
-<style>
-    @media (max-width: 600px) {
-        .result-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-        .result-stat .value { font-size: 1.1rem !important; }
-        .review-options { grid-template-columns: 1fr !important; }
-        .review-header { flex-direction: column; gap: 6px; }
-    }
-</style>
-{% endblock %}
+
 {% block content %}
-<div class="main-content" style="max-width: 900px; margin: 0 auto;">
-    <div class="result-header">
-        <h1>🎯 Practice Session Complete</h1>
-        <p class="text-muted">{{ config.name if config else 'Practice' }}</p>
+<div class="animate-fade">
+    <div class="result-hero">
+        <div style="font-size:2rem;margin-bottom:16px">🎯</div>
+        <h2 style="margin-bottom:8px">Practice Complete!</h2>
+        <p class="text-secondary" style="margin-bottom:24px">{{ config.name }}</p>
 
-        <!-- Accuracy Ring -->
-        <div class="progress-ring-container" style="margin: 30px 0;">
-            <svg width="160" height="160" viewBox="0 0 160 160">
-                <circle class="progress-ring-bg" cx="80" cy="80" r="65" />
-                <circle class="progress-ring-fill" cx="80" cy="80" r="65"
-                    stroke="{{ 'var(--green)' if accuracy >= 70 else 'var(--yellow)' if accuracy >= 40 else 'var(--red)' }}"
-                    stroke-dasharray="{{ 2 * 3.14159 * 65 }}"
-                    stroke-dashoffset="{{ 2 * 3.14159 * 65 * (1 - accuracy / 100) }}" transform="rotate(-90 80 80)" />
-                <text x="80" y="74" text-anchor="middle" class="progress-ring-text">{{ accuracy }}%</text>
-                <text x="80" y="94" text-anchor="middle" class="progress-ring-label">Accuracy</text>
+        <div class="score-ring">
+            <svg viewBox="0 0 120 120">
+                <circle class="ring-bg" cx="60" cy="60" r="52" />
+                <circle class="ring-fill" cx="60" cy="60" r="52"
+                    stroke="{% if accuracy >= 50 %}var(--green){% else %}var(--red){% endif %}"
+                    stroke-dasharray="326.73" stroke-dashoffset="{{ 326.73 - (326.73 * accuracy / 100) }}" />
             </svg>
-        </div>
-    </div>
-
-    <div class="result-grid">
-        <div class="result-stat">
-            <div class="value mono">{{ practice.total_answered }}</div>
-            <div class="label">Total Answered</div>
-        </div>
-        <div class="result-stat">
-            <div class="value mono text-green">{{ practice.total_correct }}</div>
-            <div class="label">Correct</div>
-        </div>
-        <div class="result-stat">
-            <div class="value mono text-red">{{ practice.total_answered - practice.total_correct }}</div>
-            <div class="label">Wrong / Skipped</div>
-        </div>
-        <div class="result-stat">
-            <div class="value mono">{{ accuracy }}%</div>
-            <div class="label">Accuracy</div>
-        </div>
-    </div>
-
-    <!-- Question Review -->
-    <h2 style="margin: 24px 0 16px;">📝 Question Review</h2>
-    <p class="text-muted mb-2">Note: Answers are not tracked per-question in practice mode. Refer to feedback shown
-        during practice for details.</p>
-
-    {% for q in questions %}
-    <div class="review-item" style="border-left: 3px solid var(--muted);">
-        <div class="review-header">
-            <div>
-                <span class="question-number">Q{{ loop.index }}</span>
-                <span class="badge badge-muted">S{{ q.section }}</span>
-                <span class="badge badge-muted">{{ q.topic }}</span>
+            <div class="score-text">
+                <div class="score-pct">{{ accuracy }}%</div>
+                <div class="score-label">Accuracy</div>
             </div>
-            <span class="badge badge-success">Ans: {{ q.correct_ans }}</span>
         </div>
-        <p style="margin: 8px 0;">{{ q.question }}</p>
-        <div class="review-options">
-            {% for opt in ['A', 'B', 'C', 'D'] %}
-            <div class="review-option {{ 'correct-opt' if opt == q.correct_ans else '' }}">
-                <strong>{{ opt }}:</strong> {{ q['option_' + opt|lower] }}
-                {% if opt == q.correct_ans %} ✅{% endif %}
-            </div>
-            {% endfor %}
-        </div>
-        {% if q.explanation %}
-        <div class="review-explanation">💡 {{ q.explanation }}</div>
-        {% endif %}
     </div>
-    {% endfor %}
 
-    <div style="text-align: center; margin: 30px 0;" class="btn-group" style="justify-content: center;">
-        {% if config %}
-        <form action="{{ url_for('student.start_practice', config_id=config.id) }}" method="POST"
-            style="display:inline;">
-            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
-            <button type="submit" class="btn btn-primary">🔄 New Random Set</button>
-        </form>
-        {% endif %}
-        <a href="{{ url_for('student.home') }}" class="btn btn-outline">🏠 Home</a>
+    <div class="result-stats">
+        <div class="result-stat">
+            <div class="stat-value">{{ practice.total_answered }}</div>
+            <div class="stat-label">Answered</div>
+        </div>
+        <div class="result-stat">
+            <div class="stat-value" style="color:var(--green)">{{ practice.total_correct }}</div>
+            <div class="stat-label">Correct</div>
+        </div>
+        <div class="result-stat">
+            <div class="stat-value" style="color:var(--red)">{{ practice.total_answered - practice.total_correct }}
+            </div>
+            <div class="stat-label">Wrong</div>
+        </div>
+    </div>
+
+    {# Question Review #}
+    {% if questions %}
+    <div class="page-content">
+        <h3 style="margin-bottom:16px">📝 Question Review</h3>
+        {% for q in questions %}
+        <div class="review-item" style="border-left-color:var(--primary)">
+            <div class="flex items-center gap-8" style="margin-bottom:8px">
+                <span class="font-bold text-sm">Q{{ loop.index }}</span>
+                <span class="chip">{{ q.section }}</span>
+                <span class="chip">{{ q.topic }}</span>
+            </div>
+            <div style="font-size:.95rem;margin-bottom:12px">{{ q.question }}</div>
+            <div class="options-list" style="gap:6px">
+                {% for opt in ['A','B','C','D'] %}
+                <div class="option-btn locked {% if opt == q.correct_ans %}correct{% endif %}"
+                    style="cursor:default;padding:10px 14px;min-height:auto">
+                    <span class="option-label" style="width:28px;height:28px;font-size:.8rem">{{ opt }}</span>
+                    <span class="text-sm">{{ q['option_' ~ opt|lower] }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% if q.explanation %}
+            <div class="feedback-box"
+                style="margin-top:10px;background:var(--blue-light);border:1px solid var(--blue);color:#1e40af">
+                💡 {{ q.explanation }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="text-center" style="padding:24px">
+        <a href="{{ url_for('student.start_practice', config_id=config.id) }}" class="btn btn-primary"
+            style="margin-right:8px">🔄 New Set</a>
+        <a href="{{ url_for('student.home') }}" class="btn btn-outline">← Home</a>
     </div>
 </div>
 {% endblock %}

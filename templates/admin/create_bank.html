@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Create Bank — DDCET{% endblock %}
+{% block page_title %}Create Question Bank{% endblock %}
+
+{% block content %}
+<div class="animate-fade" style="max-width:600px">
+    <a href="{{ url_for('admin.banks') }}" class="btn btn-ghost btn-sm" style="margin-bottom:16px">← Back to Banks</a>
+    <div class="card">
+        <h3 style="margin-bottom:16px">📚 New Question Bank</h3>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+            <div class="form-group"><label class="form-label">Bank Name</label><input type="text" name="name"
+                    class="form-input" required placeholder="e.g. DDCET 2025 Physics"></div>
+            <div class="form-group"><label class="form-label">Description (optional)</label><textarea name="description"
+                    class="form-textarea" rows="2"></textarea></div>
+            <div class="grid grid-2 gap-12">
+                <div class="form-group"><label class="form-label">Year (optional)</label><input type="text" name="year"
+                        class="form-input" placeholder="e.g. 2025"></div>
+                <div class="form-group"><label class="form-label">Section (optional)</label>
+                    <select name="section" class="form-select">
+                        <option value="">All</option>
+                        <option value="1">Section 1</option>
+                        <option value="2">Section 2</option>
+                    </select>
+                </div>
+            </div>
+            <label class="form-checkbox" style="margin-bottom:16px"><input type="checkbox" name="is_active" checked>
+                Active</label>
+            <div class="flex gap-12"><button type="submit" class="btn btn-primary">Create Bank</button><a
+                    href="{{ url_for('admin.banks') }}" class="btn btn-outline">Cancel</a></div>
+        </form>
+    </div>
+</div>
+{% endblock %}

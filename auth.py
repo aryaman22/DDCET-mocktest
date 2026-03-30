@@ -267,3 +267,119 @@ def profile():
         return redirect(url_for('auth.profile'))
 
     return render_template('auth/profile.html')
+
+
+# ── Email Helper ──────────────────────────────────────
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import os
+
+def send_email(to_email, subject, html_body):
+    """Send email using Gmail SMTP. Returns True on success."""
+    smtp_email = os.getenv('SMTP_EMAIL', '')
+    smtp_password = os.getenv('SMTP_APP_PASSWORD', '')
+    if not smtp_email or not smtp_password:
+        return False
+
+    msg = MIMEMultipart('alternative')
+    msg['From'] = f'DDCET Portal <{smtp_email}>'
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(html_body, 'html'))
+
+    try:
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(smtp_email, smtp_password)
+            server.send_message(msg)
+        return True
+    except Exception as e:
+        print(f'Email send failed: {e}')
+        return False
+
+
+# ── Forgot Password ──────────────────────────────────
+_reset_tokens = {}  # {token: {'email': str, 'expires': float}}
+
+@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(url_for('student.home'))
+
+    if request.method == 'POST':
+        if not validate_csrf(request.form.get('csrf_token')):
+            flash('Invalid request. Please try again.', 'error')
+            return redirect(url_for('auth.forgot_password'))
+
+        email = request.form.get('email', '').strip().lower()
+        # Always show success to prevent email enumeration
+        flash('If this email is registered, a password reset link has been sent.', 'success')
+
+        user = User.query.filter_by(email=email).first()
+        if user:
+            token = secrets.token_urlsafe(32)
+            _reset_tokens[token] = {
+                'email': email,
+                'expires': time.time() + 900  # 15 minutes
+            }
+            # Clean up expired tokens
+            now = time.time()
+            expired = [t for t, d in _reset_tokens.items() if d['expires'] < now]
+            for t in expired:
+                del _reset_tokens[t]
+
+            reset_url = request.host_url.rstrip('/') + url_for('auth.reset_password', token=token)
+            html_body = f"""
+            <div style="font-family:Inter,sans-serif;max-width:500px;margin:0 auto;padding:24px">
+                <h2 style="color:#6366f1">🔑 DDCET Password Reset</h2>
+                <p>Hi <strong>{user.name}</strong>,</p>
+                <p>You requested a password reset. Click the button below to set a new password:</p>
+                <div style="text-align:center;margin:24px 0">
+                    <a href="{reset_url}" style="background:#6366f1;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Reset Password</a>
+                </div>
+                <p style="color:#64748b;font-size:14px">This link expires in 15 minutes. If you didn't request this, ignore this email.</p>
+            </div>
+            """
+            send_email(email, 'DDCET Portal — Password Reset', html_body)
+
+        return redirect(url_for('auth.forgot_password'))
+
+    return render_template('auth/forgot_password.html')
+
+
+@auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    data = _reset_tokens.get(token)
+    if not data or data['expires'] < time.time():
+        flash('This reset link has expired or is invalid.', 'error')
+        return redirect(url_for('auth.forgot_password'))
+
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        confirm = request.form.get('confirm_password', '')
+
+        if len(password) < 8:
+            flash('Password must be at least 8 characters.', 'error')
+            return redirect(url_for('auth.reset_password', token=token))
+
+        if not any(c.isdigit() for c in password):
+            flash('Password must contain at least 1 number.', 'error')
+            return redirect(url_for('auth.reset_password', token=token))
+
+        if password != confirm:
+            flash('Passwords do not match.', 'error')
+            return redirect(url_for('auth.reset_password', token=token))
+
+        user = User.query.filter_by(email=data['email']).first()
+        if user:
+            user.password = bc.hashpw(password.encode('utf-8'), bc.gensalt(12)).decode('utf-8')
+            db.session.commit()
+            del _reset_tokens[token]
+            flash('Password has been reset successfully! Please login.', 'success')
+            return redirect(url_for('auth.login'))
+
+        flash('User not found.', 'error')
+        return redirect(url_for('auth.forgot_password'))
+
+    return render_template('auth/reset_password.html', token=token)

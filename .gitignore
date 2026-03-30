@@ -1,2 +1,31 @@
+# Virtual Environment
 venv/
+env/
+.venv/
+
+# Environment Variables (Secrets)
 .env
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Database (Local Instance)
+instance/
+*.sqlite3
+ddcet.db
+
+# User Uploads
+uploads/*
+!uploads/.gitkeep
+
+# IDE & OS Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Flask Logs
+*.log

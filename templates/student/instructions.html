@@ -1,58 +1,57 @@
 {% extends "base.html" %}
-{% block title %}Exam Instructions — {{ config.name }} — DDCET{% endblock %}
-{% block content %}
-<div class="instructions-wrapper">
-    <div class="instructions-card">
-        <h1>📝 {{ config.name }}</h1>
+{% block title %}Exam Instructions — DDCET{% endblock %}
 
-        <div class="exam-meta-grid">
-            <div class="exam-meta-item">
-                <div class="meta-value">{{ config.total_questions }}</div>
-                <div class="meta-label">Questions</div>
+{% block content %}
+<div class="page-content animate-fade" style="display:flex;justify-content:center">
+    <div class="card instructions-card">
+        <h2 class="exam-name">{{ config.name }}</h2>
+
+        <div class="instructions-grid">
+            <div class="instruction-stat">
+                <div class="stat-val">{{ config.total_questions }}</div>
+                <div class="stat-lbl">Questions</div>
             </div>
-            <div class="exam-meta-item">
-                <div class="meta-value">{{ config.duration_minutes }} min</div>
-                <div class="meta-label">Duration</div>
+            <div class="instruction-stat">
+                <div class="stat-val">{{ config.duration_minutes }}'</div>
+                <div class="stat-lbl">Duration</div>
             </div>
-            <div class="exam-meta-item">
-                <div class="meta-value">+{{ config.marks_correct }}</div>
-                <div class="meta-label">Per Correct</div>
+            <div class="instruction-stat">
+                <div class="stat-val">+{{ config.marks_correct }}</div>
+                <div class="stat-lbl">Correct</div>
             </div>
-            <div class="exam-meta-item">
-                <div class="meta-value">−{{ config.marks_wrong }}</div>
-                <div class="meta-label">Per Wrong</div>
+            <div class="instruction-stat">
+                <div class="stat-val">−{{ config.marks_wrong }}</div>
+                <div class="stat-lbl">Wrong</div>
             </div>
-            <div class="exam-meta-item">
-                <div class="meta-value">{{ config.total_questions * config.marks_correct }}</div>
-                <div class="meta-label">Max Marks</div>
+            <div class="instruction-stat">
+                <div class="stat-val font-mono">{{ config.total_questions * config.marks_correct }}</div>
+                <div class="stat-lbl">Max Score</div>
             </div>
         </div>
 
-        <h3 style="margin: 24px 0 12px;">📋 Exam Rules</h3>
-        <ul class="rule-list">
-            <li><span class="rule-icon">🖥</span> This exam requires <strong>fullscreen mode</strong>. Exiting
-                fullscreen is logged.</li>
-            <li><span class="rule-icon">🚫</span> <strong>Tab switching</strong> is detected and recorded.</li>
-            <li><span class="rule-icon">⏱</span> The timer starts after entering fullscreen and cannot be paused.</li>
-            <li><span class="rule-icon">📊</span> Marking: <strong>+{{ config.marks_correct }}</strong> for correct,
-                <strong>−{{ config.marks_wrong }}</strong> for wrong, <strong>0</strong> for unanswered.</li>
-            <li><span class="rule-icon">🔄</span> Your answers are auto-saved every 30 seconds.</li>
+        <h3 style="margin-bottom:12px">📋 Exam Rules</h3>
+        <ul class="rules-list">
+            <li><span class="rule-icon">🖥</span> Fullscreen mode is required. The exam will launch in fullscreen.</li>
+            <li><span class="rule-icon">🚫</span> Tab switching and window blur events are monitored as violations.</li>
+            <li><span class="rule-icon">⏱</span> Timer starts once you enter fullscreen. It cannot be paused.</li>
+            <li><span class="rule-icon">📊</span> Marking: +{{ config.marks_correct }} for correct, −{{
+                config.marks_wrong }} for wrong, 0 for skipped.</li>
+            <li><span class="rule-icon">🔄</span> Answers are auto-saved every 30 seconds.</li>
             <li><span class="rule-icon">⏰</span> The exam auto-submits when time runs out.</li>
-            <li><span class="rule-icon">🔒</span> Right-click and developer tools are disabled during the exam.</li>
+            <li><span class="rule-icon">🔒</span> Right-click is disabled during the exam.</li>
         </ul>
 
-        <div class="info-box info-box-yellow" style="margin-top: 20px;">
-            ⚠️ Make sure you have a stable internet connection before starting.
+        <div class="warning-box">
+            ⚠️ <strong>Stable internet required.</strong> If you lose connection, your last auto-saved answers will be
+            submitted.
         </div>
 
-        <div style="text-align: center; margin-top: 30px;">
-            <a href="{{ url_for('student.start_exam', config_id=config.id) }}" class="btn btn-primary btn-lg">
-                🖥 Start Exam — Enter Fullscreen
-            </a>
-        </div>
-
-        <div style="text-align: center; margin-top: 12px;">
-            <a href="{{ url_for('student.home') }}" class="btn btn-outline btn-sm">← Back to Home</a>
+        <form method="POST" action="{{ url_for('student.start_exam', config_id=config.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+            <button type="submit" class="btn btn-primary btn-lg w-100">🖥 Start Exam — Enter Fullscreen</button>
+        </form>
+        <div class="text-center" style="margin-top:12px">
+            <a href="{{ url_for('student.home') }}" class="text-secondary text-sm">← Back to Home</a>
         </div>
     </div>
 </div>

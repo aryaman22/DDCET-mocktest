@@ -1,17 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Question Banks — DDCET Admin{% endblock %}
+{% block title %}Question Banks — DDCET{% endblock %}
+{% block page_title %}Question Banks{% endblock %}
+
 {% block content %}
-<div class="main-content">
-    <div class="d-flex justify-between align-center" style="margin-bottom: 24px;">
-        <h1>📚 Question Banks</h1>
-        <div class="btn-group">
-            <a href="{{ url_for('admin.create_bank') }}" class="btn btn-primary">+ Create Bank</a>
-        </div>
+<div class="animate-fade">
+    <div class="flex justify-between items-center" style="margin-bottom:20px">
+        <h3>📚 Question Banks</h3>
+        <a href="{{ url_for('admin.create_bank') }}" class="btn btn-primary btn-sm">+ Create Bank</a>
     </div>
 
     {% if banks %}
-    <div class="table-responsive">
-        <table class="table-dark">
+    <div class="table-container">
+        <table class="table-responsive">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -23,41 +23,35 @@
                 </tr>
             </thead>
             <tbody>
-                {% for bank in banks %}
+                {% for b in banks %}
                 <tr>
-                    <td><strong>{{ bank.name }}</strong>{% if bank.description %}<br><small class="text-muted">{{
-                            bank.description[:60] }}</small>{% endif %}</td>
-                    <td class="mono">{{ bank.year or '—' }}</td>
-                    <td>
-                        {% if bank.section == 0 %}
-                        <span class="badge badge-muted">All</span>
-                        {% else %}
-                        <span class="badge badge-muted">Section {{ bank.section }}</span>
-                        {% endif %}
+                    <td data-label="Name"><a href="{{ url_for('admin.bank_questions', bank_id=b.id) }}"
+                            class="font-medium">{{ b.name }}</a></td>
+                    <td data-label="Year">{{ b.year or '—' }}</td>
+                    <td data-label="Section">{{ b.section or 'All' }}</td>
+                    <td data-label="Questions" class="font-mono">{{ b.question_count }}</td>
+                    <td data-label="Active">
+                        <form method="POST" action="{{ url_for('admin.toggle_bank', bank_id=b.id) }}"
+                            style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+                            <button type="submit"
+                                class="badge {% if b.is_active %}badge-success{% else %}badge-danger{% endif %}"
+                                style="cursor:pointer;border:none">
+                                {{ 'Active' if b.is_active else 'Inactive' }}
+                            </button>
+                        </form>
                     </td>
-                    <td class="mono">{{ bank.question_count }}</td>
-                    <td>
-                        <span class="badge {{ 'badge-success' if bank.is_active else 'badge-danger' }}">
-                            {{ '✅ Active' if bank.is_active else '❌ Inactive' }}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="btn-group">
-                            <a href="{{ url_for('admin.bank_questions', bank_id=bank.id) }}"
-                                class="btn btn-outline btn-sm">📋 Questions</a>
-                            <a href="{{ url_for('admin.upload_questions', bank_id=bank.id) }}"
-                                class="btn btn-outline btn-sm">📤 Upload</a>
-                            <form action="{{ url_for('admin.toggle_bank', bank_id=bank.id) }}" method="POST"
-                                style="display:inline;">
+                    <td data-label="Actions">
+                        <div class="flex gap-8">
+                            <a href="{{ url_for('admin.bank_questions', bank_id=b.id) }}"
+                                class="btn btn-ghost btn-sm">View</a>
+                            <a href="{{ url_for('admin.upload_questions', bank_id=b.id) }}"
+                                class="btn btn-ghost btn-sm">Upload</a>
+                            <form method="POST" action="{{ url_for('admin.delete_bank', bank_id=b.id) }}"
+                                style="display:inline">
                                 <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
-                                <button type="submit" class="btn btn-outline btn-sm">{{ '🔴 Deactivate' if
-                                    bank.is_active
-                                    else '🟢 Activate' }}</button>
-                            </form>
-                            <form action="{{ url_for('admin.delete_bank', bank_id=bank.id) }}" method="POST"
-                                style="display:inline;" class="delete-form">
-                                <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
-                                <button type="submit" class="btn btn-danger btn-sm">🗑</button>
+                                <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--red)"
+                                    data-confirm="Delete this bank and all its questions?">🗑</button>
                             </form>
                         </div>
                     </td>
@@ -67,13 +61,11 @@
         </table>
     </div>
     {% else %}
-    <div class="empty-state">
+    <div class="empty-state card">
         <div class="empty-icon">📚</div>
-        <h3>No question banks yet</h3>
-        <p>Create a question bank and upload questions to get started.</p>
-        <a href="{{ url_for('admin.create_bank') }}" class="btn btn-primary">+ Create Your First Bank</a>
+        <p>No question banks created yet.</p>
+        <a href="{{ url_for('admin.create_bank') }}" class="btn btn-primary">Create First Bank</a>
     </div>
     {% endif %}
 </div>
-<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 {% endblock %}

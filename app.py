@@ -60,6 +60,21 @@ def create_app():
         except Exception:
             return str(dt)
 
+    @app.template_filter('from_json')
+    def from_json(value):
+        import json
+        if not value: return []
+        if isinstance(value, list): return value
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, str):
+                parsed = json.loads(parsed)
+            if isinstance(parsed, list):
+                return parsed
+        except Exception:
+            pass
+        return []
+
     @app.template_filter('ist_time')
     def to_ist_time(dt):
         if dt is None:
@@ -91,6 +106,50 @@ def create_app():
             'attempts': TestAttempt.query.count()
         }
         return render_template('landing.html', stats=stats)
+
+    @app.route('/contact', methods=['GET', 'POST'])
+    def contact():
+        if request.method == 'POST':
+            from auth import send_email, validate_csrf
+            if not validate_csrf(request.form.get('csrf_token')):
+                from flask import flash as fl
+                fl('Invalid request. Please try again.', 'error')
+                return redirect('/contact')
+
+            name = request.form.get('name', '').strip()
+            email = request.form.get('email', '').strip()
+            subject = request.form.get('subject', '').strip()
+            message = request.form.get('message', '').strip()
+
+            if not all([name, email, subject, message]):
+                from flask import flash as fl
+                fl('All fields are required.', 'error')
+                return redirect('/contact')
+
+            admin_email = os.getenv('CONTACT_EMAIL', 'aryamanjoshi23@gmail.com')
+            html_body = f"""
+            <div style="font-family:Inter,sans-serif;max-width:560px;margin:0 auto;padding:24px">
+                <h2 style="color:#6366f1">📬 New Contact Message</h2>
+                <table style="width:100%;border-collapse:collapse">
+                    <tr><td style="padding:8px;font-weight:600;color:#64748b">Name</td><td style="padding:8px">{name}</td></tr>
+                    <tr><td style="padding:8px;font-weight:600;color:#64748b">Email</td><td style="padding:8px"><a href="mailto:{email}">{email}</a></td></tr>
+                    <tr><td style="padding:8px;font-weight:600;color:#64748b">Subject</td><td style="padding:8px">{subject}</td></tr>
+                </table>
+                <div style="background:#f8fafc;padding:16px;border-radius:8px;margin-top:16px">
+                    <p style="margin:0;white-space:pre-wrap">{message}</p>
+                </div>
+            </div>
+            """
+            sent = send_email(admin_email, f'DDCET Contact: {subject}', html_body)
+            from flask import flash as fl
+            if sent:
+                fl('Message sent successfully! We\'ll get back to you soon.', 'success')
+            else:
+                fl('Message could not be sent. Please try again later or email us directly.', 'error')
+
+            return redirect('/contact')
+
+        return render_template('contact.html')
 
     @app.errorhandler(403)
     def forbidden(e):

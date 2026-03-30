@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Practice Setup — DDCET{% endblock %}
+
+{% block content %}
+<div class="page-content animate-fade" style="display:flex;justify-content:center">
+    <div class="card instructions-card" style="max-width:600px;width:100%">
+        <h2 class="exam-name">🎯 {{ config.name }}</h2>
+        <p class="text-secondary" style="margin-bottom:20px">{{ bank_names }}</p>
+
+        <div class="instructions-grid" style="margin-bottom:24px">
+            <div class="instruction-stat">
+                <div class="stat-val">{{ total_available }}</div>
+                <div class="stat-lbl">Total Questions</div>
+            </div>
+            <div class="instruction-stat">
+                <div class="stat-val">{{ sec1_count }}</div>
+                <div class="stat-lbl">Section 1</div>
+            </div>
+            <div class="instruction-stat">
+                <div class="stat-val">{{ sec2_count }}</div>
+                <div class="stat-lbl">Section 2</div>
+            </div>
+            <div class="instruction-stat">
+                <div class="stat-val">{{ available_topics|length }}</div>
+                <div class="stat-lbl">Topics</div>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('student.start_practice', config_id=config.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ g.csrf_token }}">
+
+            {# Number of Questions #}
+            <div class="form-group" style="margin-bottom:16px">
+                <label class="form-label font-medium" style="margin-bottom:8px;display:block">📝 Number of
+                    Questions</label>
+                <div class="flex gap-8 flex-wrap">
+                    <label class="chip-radio">
+                        <input type="radio" name="num_questions" value="10"> <span class="chip-label">10</span>
+                    </label>
+                    <label class="chip-radio">
+                        <input type="radio" name="num_questions" value="20"> <span class="chip-label">20</span>
+                    </label>
+                    <label class="chip-radio">
+                        <input type="radio" name="num_questions" value="50"> <span class="chip-label">50</span>
+                    </label>
+                    <label class="chip-radio">
+                        <input type="radio" name="num_questions" value="100"> <span class="chip-label">100</span>
+                    </label>
+                    <label class="chip-radio">
+                        <input type="radio" name="num_questions" value="0" checked> <span class="chip-label">All ({{
+                            total_available }})</span>
+                    </label>
+                </div>
+            </div>
+
+            {# Section Filter #}
+            <div class="form-group" style="margin-bottom:16px">
+                <label class="form-label font-medium" style="margin-bottom:8px;display:block">📑 Section</label>
+                <div class="flex gap-8 flex-wrap">
+                    <label class="chip-radio">
+                        <input type="radio" name="section" value="0" checked> <span class="chip-label">All
+                            Sections</span>
+                    </label>
+                    {% if sec1_count > 0 %}
+                    <label class="chip-radio">
+                        <input type="radio" name="section" value="1"> <span class="chip-label">Section 1 ({{ sec1_count
+                            }})</span>
+                    </label>
+                    {% endif %}
+                    {% if sec2_count > 0 %}
+                    <label class="chip-radio">
+                        <input type="radio" name="section" value="2"> <span class="chip-label">Section 2 ({{ sec2_count
+                            }})</span>
+                    </label>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Topic Filter #}
+            {% if available_topics %}
+            <div class="form-group" style="margin-bottom:24px">
+                <label class="form-label font-medium" style="margin-bottom:8px;display:block">🏷 Topics <span
+                        class="text-muted text-sm">(leave empty for all)</span></label>
+                <div class="topic-checkbox-grid">
+                    {% for topic in available_topics %}
+                    <label class="chip-check">
+                        <input type="checkbox" name="topics" value="{{ topic }}">
+                        <span class="chip-label">{{ topic }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-success btn-lg w-100">🎯 Start Practice</button>
+        </form>
+        <div class="text-center" style="margin-top:12px">
+            <a href="{{ url_for('student.home') }}" class="text-secondary text-sm">← Back to Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
