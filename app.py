@@ -3,6 +3,8 @@ from flask_login import LoginManager, current_user
 from models import db, User
 import os
 from dotenv import load_dotenv
+from flask_migrate import Migrate
+migrate = Migrate(app, db)
 
 load_dotenv()
 
