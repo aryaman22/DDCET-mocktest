@@ -170,29 +170,33 @@ def create_app():
         db.session.rollback()  # prevent transaction lock-up under load
         return render_template('errors/500.html'), 500
 
-    with app.app_context():
-        os.makedirs('uploads', exist_ok=True)
-        db.create_all()
-        # Seed default admin if none exists
-        if not User.query.filter_by(role='admin').first():
-            import bcrypt as bc
-            import secrets as _secrets
-            default_pw = os.getenv('ADMIN_DEFAULT_PASSWORD') or _secrets.token_urlsafe(12)
-            hashed = bc.hashpw(default_pw.encode(), bc.gensalt(12)).decode()
-            db.session.add(User(
-                name='Administrator',
-                email='admin@ddcet.local',
-                enrollment_number='ADMIN-001',
-                engineering_branch='Other',
-                password=hashed,
-                role='admin'
-            ))
-            db.session.commit()
-            if os.getenv('ADMIN_DEFAULT_PASSWORD'):
-                print("✅ Default admin created (password from env var)")
-            else:
-                print(f"✅ Default admin created: admin@ddcet.local / {default_pw}")
-                print("⚠️  Set ADMIN_DEFAULT_PASSWORD env var in production!")
+    try:
+        with app.app_context():
+            os.makedirs('uploads', exist_ok=True)
+            db.create_all()
+            # Seed default admin if none exists
+            if not User.query.filter_by(role='admin').first():
+                import bcrypt as bc
+                import secrets as _secrets
+                default_pw = os.getenv('ADMIN_DEFAULT_PASSWORD') or _secrets.token_urlsafe(12)
+                hashed = bc.hashpw(default_pw.encode(), bc.gensalt(12)).decode()
+                db.session.add(User(
+                    name='Administrator',
+                    email='admin@ddcet.local',
+                    enrollment_number='ADMIN-001',
+                    engineering_branch='Other',
+                    password=hashed,
+                    role='admin'
+                ))
+                db.session.commit()
+                if os.getenv('ADMIN_DEFAULT_PASSWORD'):
+                    print("✅ Default admin created (password from env var)")
+                else:
+                    print(f"✅ Default admin created: admin@ddcet.local / {default_pw}")
+                    print("⚠️  Set ADMIN_DEFAULT_PASSWORD env var in production!")
+    except Exception as e:
+        print(f"⚠️  Database initialization skipped during startup: {e}")
+        print("⚠️  The app will still start. Admin user can be seeded on next restart once the database is ready.")
 
     return app
 
