@@ -1,15 +1,15 @@
 from flask import Flask, redirect, render_template, request
 from flask_login import LoginManager, current_user
-from models import db, User
+from models import db, User, QuestionBank, Question, ExamConfig, TestAttempt, PracticeSession, AdminLog, BookmarkedQuestion
 import os
 from dotenv import load_dotenv
 from flask_migrate import Migrate
-migrate = Migrate(app, db)
-
+migrate = Migrate()
 load_dotenv()
 
 def create_app():
     app = Flask(__name__)
+    migrate.init_app(app, db)
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'ddcet-change-this-in-production')
 
     db_uri = os.getenv('DATABASE_URL', 'sqlite:///ddcet.db')
@@ -172,10 +172,11 @@ def create_app():
         db.session.rollback()  # prevent transaction lock-up under load
         return render_template('errors/500.html'), 500
 
-    try:
-        with app.app_context():
-            os.makedirs('uploads', exist_ok=True)
-            db.create_all()
+    with app.app_context():
+        os.makedirs('uploads', exist_ok=True)
+        # db.create_all()  # Managed by migrations (flask db upgrade)
+        
+        try:
             # Seed default admin if none exists
             if not User.query.filter_by(role='admin').first():
                 import bcrypt as bc
@@ -196,9 +197,9 @@ def create_app():
                 else:
                     print(f"✅ Default admin created: admin@ddcet.local / {default_pw}")
                     print("⚠️  Set ADMIN_DEFAULT_PASSWORD env var in production!")
-    except Exception as e:
-        print(f"⚠️  Database initialization skipped during startup: {e}")
-        print("⚠️  The app will still start. Admin user can be seeded on next restart once the database is ready.")
+        except Exception as e:
+            # Table might not exist yet during migration init
+            print(f"ℹ️ Skipping seeding: {str(e)}")
 
     return app
 
