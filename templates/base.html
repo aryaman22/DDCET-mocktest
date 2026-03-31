@@ -8,6 +8,17 @@
     <meta name="description"
         content="{% block meta_desc %}DDCET Exam Portal — Mock tests & practice for Diploma to Degree entrance exam{% endblock %}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        .pw-wrap { position: relative; }
+        .pw-wrap .form-input { padding-right: 2.75rem; width: 100%; box-sizing: border-box; }
+        .pw-toggle {
+            position: absolute; right: 0.75rem; top: 50%;
+            transform: translateY(-50%);
+            background: none; border: none; cursor: pointer;
+            color: #64748b; font-size: 1rem; padding: 0; line-height: 1;
+        }
+        .pw-toggle:hover { color: #6366f1; }
+    </style>
     {% block head_extra %}{% endblock %}
 </head>
 
@@ -172,6 +183,20 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
+
+    <script>
+    function togglePw(id) {
+        const inp = document.getElementById(id);
+        const btn = inp.nextElementSibling;
+        if (inp.type === 'password') {
+            inp.type = 'text';
+            btn.textContent = '🙈';
+        } else {
+            inp.type = 'password';
+            btn.textContent = '👁';
+        }
+    }
+    </script>
 </body>
 
 </html>

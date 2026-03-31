@@ -51,13 +51,19 @@
                 <div class="grid grid-2 gap-12">
                     <div class="form-group">
                         <label class="form-label" for="password">Password</label>
-                        <input type="password" id="password" name="password" class="form-input"
-                            placeholder="Min 6 chars" required>
+                        <div class="pw-wrap">
+                            <input type="password" id="password" name="password" class="form-input"
+                                placeholder="Min 8 chars" required>
+                            <button type="button" class="pw-toggle" onclick="togglePw('password')" tabindex="-1">👁</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="confirm_password">Confirm</label>
-                        <input type="password" id="confirm_password" name="confirm_password" class="form-input"
-                            placeholder="Re-enter" required>
+                        <div class="pw-wrap">
+                            <input type="password" id="confirm_password" name="confirm_password" class="form-input"
+                                placeholder="Re-enter" required>
+                            <button type="button" class="pw-toggle" onclick="togglePw('confirm_password')" tabindex="-1">👁</button>
+                        </div>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary w-100" style="margin-top:8px">Create Account</button>
