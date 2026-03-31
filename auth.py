@@ -89,7 +89,7 @@ def login():
 
         user = User.query.filter_by(email=email).first()
         if user and bc.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
-            if not user.is_active:
+            if not user.is_active_user:  # FIX: was user.is_active (wrong column name)
                 flash('Your account has been deactivated. Contact admin.', 'error')
                 return redirect(url_for('auth.login'))
             
